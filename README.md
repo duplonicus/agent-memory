@@ -2,13 +2,13 @@
 
 **Agent memory as plain files, mirrored into [SurrealDB](https://surrealdb.com): graph links, full-text and vector search in one database, across every project.** Embeddings run locally through [Ollama](https://ollama.com), on your GPU when you have one.
 
-Your coding agent forgets everything between sessions. The usual fix is a notes file per project, and it works until you have twenty of them. Then you can no longer answer simple questions:
+Your coding agent forgets everything between sessions. The usual fix is to have it keep a notes file per project, and that works until there are twenty of them. Then you can no longer answer simple questions:
 
 - **What is waiting on whom?** Every open thread in every project, with the person or thing it waits on.
 - **What did we claim but never check?** "Tests pass", "works on Windows", written down and never verified.
 - **Which sessions did work and logged nothing?** Every LOG line carries its session id, so the gap shows up at the next session start.
 
-agent-memory keeps the notes as markdown you can read and edit by hand. A small daemon mirrors them into SurrealDB, so one query answers those questions across all your projects. Built for Claude Code. The conventions work with any agent that reads files, and the hook and skills could be adapted to agents with the same building blocks, such as Codex, which has SessionStart hooks and SKILL.md skills.
+With agent-memory, **the agent keeps its own notes and you don't write any.** They are plain markdown files you can open and read whenever you want. A small daemon mirrors them into SurrealDB, so one query answers those questions across all your projects. Built for Claude Code. The conventions work with any agent that reads files, and the hook and skills could be adapted to agents with the same building blocks, such as Codex, which has SessionStart hooks and SKILL.md skills.
 
 ## What a session sees
 
@@ -132,7 +132,7 @@ Run `.\install.ps1` in PowerShell. Everything runs as Windows programs: agent-me
 
 ## How it works
 
-1. **You and your agent write markdown.** One `NOW.md` per project (current state, six sections), one shared `LOG.md` (one line per session), Claude Code's memory files, your `CLAUDE.md`. These files are the memory, and they stay readable and editable by hand.
+1. **The agent writes markdown; you don't have to.** The [CLAUDE.md section](templates/CLAUDE.md) the installer adds teaches it to keep one `NOW.md` per project (current state, six sections) and one shared `LOG.md` (one line per session), next to Claude Code's own memory files and your `CLAUDE.md`. These files are the memory. You can read them any time; nothing expects you to write them.
 2. **The sync daemon copies them into SurrealDB every 20 seconds, one way.** Every block (bullet, paragraph, heading) becomes a row with its exact bytes, so each file can be rebuilt byte for byte. An edited file only touches the blocks that changed; a removed block is marked superseded, not deleted.
 3. **Graph edges tie it together.** Entries and LOG lines point at their project, LOG lines at the session that wrote them, memories at the memories they supersede or contradict.
 4. **Ollama embeds each block** (embeddinggemma, 768 dimensions) into an HNSW index in the same database.
@@ -142,7 +142,7 @@ A moved or renamed project folder keeps its ids, vectors and edges: a new file w
 
 ## The conventions
 
-The templates are the product as much as the code: [templates/NOW.md](templates/NOW.md), [templates/LOG.md](templates/LOG.md), [templates/memory.md](templates/memory.md) and the [CLAUDE.md section](templates/CLAUDE.md) that teaches the agent to use them. The short version:
+The templates are the product as much as the code: [templates/NOW.md](templates/NOW.md), [templates/LOG.md](templates/LOG.md), [templates/memory.md](templates/memory.md) and the [CLAUDE.md section](templates/CLAUDE.md) that teaches the agent to use them. What the agent is taught:
 
 - **Write it down when it happens.** A decision, especially a decision **not** to do something; an open thread and who it waits on; anything claimed but not verified.
 - **NOW.md is state, LOG.md is history.** Overwrite NOW.md; append to LOG.md.

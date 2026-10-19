@@ -4,7 +4,7 @@ The closest project is [ai-memory](https://github.com/akitaonrails/ai-memory) (F
 
 ## Where ai-memory is ahead
 
-- **It captures automatically.** Lifecycle hooks record prompts, tool calls and session boundaries (README.md:67), so nothing depends on the agent remembering to write. agent-memory records only what the agent or you write down.
+- **It captures automatically.** Lifecycle hooks record prompts, tool calls and session boundaries (README.md:67), so nothing depends on the agent remembering to write. agent-memory records only what the agent writes down.
 - **It supports many harnesses.** Its README says "more than twenty" (README.md:29), and its matrix names 31, at different support levels. agent-memory is built for Claude Code; other agents get only the file conventions.
 - **One binary, embeddings built in.** It ships as one self-contained binary (README.md:94) with a local MiniLM model running in-process: no Docker, no Ollama.
 - **Platforms.** Linux and macOS are supported, native Windows is experimental (README.md:130-134). agent-memory is tested on Linux, WSL2 and native Windows, not on macOS.
@@ -34,4 +34,4 @@ You want capture without discipline, several different agents sharing one memory
 
 ## Pick agent-memory if
 
-You use Claude Code, you want notes you can read and edit by hand, and the questions you keep asking are "what is waiting on whom", "what did we never check" and "what did that session do".
+You use Claude Code, you want your agent's memory in plain files you can read, and the questions you keep asking are "what is waiting on whom", "what did we never check" and "what did that session do".
