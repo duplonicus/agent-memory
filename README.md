@@ -8,7 +8,7 @@ Your coding agent forgets everything between sessions. The usual fix is a notes 
 - **What did we claim but never check?** "Tests pass", "works on Windows", written down and never verified.
 - **Which sessions did work and logged nothing?** Every LOG line carries its session id, so the gap shows up at the next session start.
 
-agent-memory keeps the notes as markdown you can read and edit by hand. A small daemon mirrors them into SurrealDB, so one query answers those questions across all your projects. Built for Claude Code; the conventions work with any agent that reads files.
+agent-memory keeps the notes as markdown you can read and edit by hand. A small daemon mirrors them into SurrealDB, so one query answers those questions across all your projects. Built for Claude Code. The conventions work with any agent that reads files, and the hook and skills could be adapted to agents with the same building blocks, such as Codex, which has SessionStart hooks and SKILL.md skills.
 
 ## What a session sees
 
