@@ -1,10 +1,21 @@
-# Install agent-memory on Windows: checks the prerequisites, creates the virtualenv, then hands over to
-# `agent-memory install`, which asks before each change outside this folder. Arguments pass through.
+# Install agent-memory on Windows. First the dependencies (uv, Python, Docker Desktop, SurrealDB, Ollama):
+# if any are missing it offers to install them from a checklist (scripts\install-deps.ps1). Then it
+# creates the virtualenv and hands over to `agent-memory install`, which asks before each change outside
+# this folder. Arguments pass through (--yes, --notes DIR, --projects DIR[,DIR], --no-service, --no-claude).
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
-if (-not (Get-Command uv -ErrorAction SilentlyContinue)) { Write-Error 'missing: uv (https://docs.astral.sh/uv/)'; exit 1 }
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { 'note: no docker; you will need your own SurrealDB 3.3.4 on 127.0.0.1:8000' }
-try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 http://127.0.0.1:11434/api/version | Out-Null }
-catch { 'note: Ollama is not answering; search will be keyword only until you install it (https://ollama.com)' }
+$yes = $args -contains '--yes' -or $args -contains '-y'
+& .\scripts\install-deps.ps1 -Check
+if ($LASTEXITCODE -ne 0) {
+  ''
+  if ($yes) { & .\scripts\install-deps.ps1 -Yes }
+  else {
+    $ans = Read-Host 'Do you want to install the missing dependencies? [y/N]'
+    if ($ans -match '^(y|yes)$') { & .\scripts\install-deps.ps1 }
+  }
+  $env:Path = "$env:USERPROFILE\.local\bin;$env:LOCALAPPDATA\Microsoft\WinGet\Links;$env:Path"
+}
+if (-not (Get-Command uv -ErrorAction SilentlyContinue)) { Write-Error 'uv is required: https://docs.astral.sh/uv/getting-started/installation/'; exit 1 }
+''
 uv sync -q
 & .\.venv\Scripts\agent-memory.exe install @args

@@ -1,6 +1,6 @@
 # agent-memory
 
-**Agent memory as plain files, mirrored into SurrealDB: graph links, full-text and vector search in one database, across every project.** Embeddings run locally through Ollama, on your GPU when you have one.
+**Agent memory as plain files, mirrored into [SurrealDB](https://surrealdb.com): graph links, full-text and vector search in one database, across every project.** Embeddings run locally through [Ollama](https://ollama.com), on your GPU when you have one.
 
 Your coding agent forgets everything between sessions. The usual fix is a notes file per project, and it works until you have twenty of them. Then you can no longer answer simple questions:
 
@@ -62,17 +62,17 @@ Also there: `fn::overdue()` (past their `review by` date), `fn::stale_nows(14)` 
 
 ## Quickstart
 
-Needs Python 3.12+, [uv](https://docs.astral.sh/uv/) and Docker (or your own SurrealDB 3.3.4). [Ollama](https://ollama.com) is optional; without it, search is keyword only.
+Needs Python 3.12+, [uv](https://docs.astral.sh/uv/), [Docker](https://docs.docker.com/get-started/get-docker/) for [SurrealDB](https://surrealdb.com) 3.3.4 (or your own SurrealDB), and optionally [Ollama](https://ollama.com); without Ollama, search is keyword only. **The installer checks for all of them first** and, if any are missing, asks whether to install them: you get a checklist of what's missing, untick what you'd rather install yourself, and it runs each vendor's own installer, showing every command first. On WSL it installs Ollama as the Windows app (recommended for speed) through winget. To see the list without changing anything: `scripts/install-deps.sh --dry-run`.
 
 ```bash
 git clone https://github.com/duplonicus/agent-memory && cd agent-memory
-./install.sh          # asks before every change outside the repo; --yes to accept all
+./install.sh          # checks dependencies, then asks before every change outside the repo; --yes to accept all
 agent-memory demo     # invented demo projects in their own database: the brief, the queries, a search
 ```
 
-On Windows, run `.\install.ps1` in PowerShell. Or point your agent at [INSTALL_FOR_AGENTS.md](INSTALL_FOR_AGENTS.md) and let it do the install with you.
+On Windows, run `.\install.ps1` in PowerShell (its dependency step uses winget: uv, Docker Desktop, Ollama). Or point your agent at [INSTALL_FOR_AGENTS.md](INSTALL_FOR_AGENTS.md) and let it do the install with you.
 
-The installer writes `~/.config/agent-memory/config.toml` and an `.env` with random passwords, starts SurrealDB in Docker (loopback only), applies the schema, offers to download the embedding model (about 620 MB), and adds the SessionStart hook, the `/sum` and `/search` skills and a short conventions section to `~/.claude`. Existing `settings.json` and `CLAUDE.md` are backed up, then added to. Nothing is overwritten.
+The installer writes `~/.config/agent-memory/config.toml` and an `.env` with random passwords, starts SurrealDB in [Docker](https://www.docker.com) (loopback only), applies the schema, offers to download the embedding model (about 620 MB), and adds the SessionStart hook, the `/sum` and `/search` skills and a short conventions section to `~/.claude`. Existing `settings.json` and `CLAUDE.md` are backed up, then added to. Nothing is overwritten.
 
 ## Start the agent in the project folder
 
@@ -99,8 +99,8 @@ Everything runs natively. SurrealDB is a Docker container on `127.0.0.1:8000`, t
 Run Claude Code, your project folders and agent-memory **inside WSL**, as on Linux. Keep the projects on the Linux disk (`~/dev`), not under `/mnt/c`: it is faster, and file paths are case-sensitive the way Claude Code expects (see the path notes above). The installer is `./install.sh`, and the sync daemon is a systemd user service, which needs systemd enabled in WSL.
 
 - **SurrealDB:** Docker Desktop for Windows with WSL integration turned on, or Docker Engine installed inside WSL. Both serve `127.0.0.1:8000` to WSL.
-- **Ollama, the simple way: install it inside WSL too.** NVIDIA GPUs work in WSL 2 through the normal Windows driver ([NVIDIA's guide](https://docs.nvidia.com/cuda/wsl-user-guide/index.html); don't install a Linux GPU driver inside WSL).
-- **Ollama, the other way: the Windows app, with everything else in WSL.** It runs on the GPU natively, without going through WSL. WSL can only reach it at `127.0.0.1` with [mirrored networking](https://learn.microsoft.com/en-us/windows/wsl/networking#mirrored-mode-networking) (`networkingMode=mirrored` under `[wsl2]` in `%UserProfile%\.wslconfig`, Windows 11 22H2 or later). On the default NAT networking, WSL has to use the Windows host's IP address instead, and Ollama has to listen beyond `127.0.0.1` (`OLLAMA_HOST=0.0.0.0`), which opens it to your network. Either way, set `[embed] url` in the config to wherever Ollama answers.
+- **Ollama as the Windows app (recommended for speed), with everything else in WSL.** This is what the dependency installer sets up. It runs on the GPU natively, without going through WSL. WSL can only reach it at `127.0.0.1` with [mirrored networking](https://learn.microsoft.com/en-us/windows/wsl/networking#mirrored-mode-networking) (`networkingMode=mirrored` under `[wsl2]` in `%UserProfile%\.wslconfig`, Windows 11 22H2 or later). On the default NAT networking, WSL has to use the Windows host's IP address instead, and Ollama has to listen beyond `127.0.0.1` (`OLLAMA_HOST=0.0.0.0`), which opens it to your network. If Ollama answers anywhere but `127.0.0.1:11434`, set `[embed] url` in the config to that address.
+- **Or Ollama inside WSL too**, which needs no networking change. NVIDIA GPUs work in WSL 2 through the normal Windows driver ([NVIDIA's guide](https://docs.nvidia.com/cuda/wsl-user-guide/index.html); don't install a Linux GPU driver inside WSL).
 
 ### Windows (native, no WSL)
 
