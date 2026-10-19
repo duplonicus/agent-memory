@@ -1,0 +1,190 @@
+<title>Memory Vector Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: a full-height 3D plot with a narrow instrument rail on the right; on phones the rail stacks under the plot. */
+:root {
+  --bg: #f3f5f8; --panel: #ffffff; --fg: #18202b; --muted: #5b6676; --line: #d9dee6;
+  --accent: #2f5bd3; --hl: #e0471f; --grid: #c9d0da;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1117; --panel: #141a23; --fg: #e4e9f1; --muted: #8d98a8; --line: #252e3b;
+  --accent: #7d9cff; --hl: #ff7a50; --grid: #263041; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d1117; --panel: #141a23; --fg: #e4e9f1; --muted: #8d98a8; --line: #252e3b;
+  --accent: #7d9cff; --hl: #ff7a50; --grid: #263041; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 14px; }
+.wrap { height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 10px;
+  padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); box-sizing: border-box; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: 1.45rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 0.85rem; }
+.sub b { font-family: var(--mono); font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; min-height: 0; }
+#plot { min-width: 0; min-height: 420px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+aside { display: flex; flex-direction: column; gap: 12px; min-height: 0; min-width: 0; overflow: auto; }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+input[type=search] { width: 100%; box-sizing: border-box; font: inherit; padding: 7px 9px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--fg); }
+input[type=search]:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hint { color: var(--muted); font-size: 0.8rem; margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 0.78rem; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+.chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.chip span { font-family: var(--mono); color: var(--muted); font-size: 0.72rem; }
+.chip[aria-pressed="false"] { opacity: 0.38; }
+.row { display: flex; gap: 6px; }
+.row button { font: inherit; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+#note .meta { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+#note .text { margin: 0; line-height: 1.45; overflow-wrap: anywhere; }
+#nn { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+#nn button { all: unset; cursor: pointer; display: grid; grid-template-columns: 3.2em 1fr; gap: 8px; font-size: 0.8rem; line-height: 1.35; padding: 4px; border-radius: 4px; }
+#nn button:hover, #nn button:focus-visible { background: var(--bg); outline: 1px solid var(--line); }
+#nn .d { font-family: var(--mono); color: var(--hl); font-variant-numeric: tabular-nums; }
+#nn .t { overflow-wrap: anywhere; }
+#nn .p { color: var(--muted); }
+@media (max-width: 760px) {
+  html, body { height: auto; }
+  main { grid-template-columns: minmax(0, 1fr); }
+  #plot { height: 70vh; }
+  aside { overflow: visible; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Memory Vector Map</h1>
+    <div class="sub"><b id="nPts"></b> notes · embeddinggemma 768-d squashed to 3-d with UMAP · built <b>__BUILT__</b></div>
+  </header>
+  <main>
+    <div id="plot" role="img" aria-label="3D scatter of memory notes, coloured by project"></div>
+    <aside>
+      <div class="box">
+        <label class="label" for="q">Find words</label>
+        <input id="q" type="search" placeholder="e.g. backup, deploy, waiting on" autocomplete="off">
+        <p class="hint" id="qhint">Drag to rotate, scroll to zoom. Click a dot for its nearest notes.</p>
+      </div>
+      <div class="box" id="note">
+        <div class="label">Selected note</div>
+        <p class="hint" id="noteEmpty">Nothing selected yet.</p>
+        <div class="meta" id="noteMeta" hidden></div>
+        <p class="text" id="noteText" hidden></p>
+        <div class="label" id="nnLabel" hidden>Closest 5 in full 768-d (cosine distance)</div>
+        <ul id="nn"></ul>
+      </div>
+      <div class="box">
+        <div class="label">Projects</div>
+        <div class="row"><button id="all" type="button">Show all</button><button id="none" type="button">Hide all</button></div>
+        <div class="chips" id="chips"></div>
+      </div>
+      <p class="hint">Clusters are meaningful; distances between far-apart clusters are not (768 dimensions don't fit in 3). Notes from hidden projects show as dots with their text hidden.</p>
+    </aside>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const P = JSON.parse(document.getElementById('data').textContent);
+document.getElementById('nPts').textContent = P.length.toLocaleString();
+const PALETTE = ['#3b6fe0','#e0612f','#2aa876','#c2409a','#d9a21b','#7b5ce6','#1fa3b8','#d6454f','#6f9a1f','#a8682e','#4f7fa8','#b85cc9'];
+const counts = {}; P.forEach(p => counts[p.p] = (counts[p.p] || 0) + 1);
+const projects = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+const color = {}; projects.forEach((p, i) => color[p] = i < PALETTE.length ? PALETTE[i] : null);
+const visible = {}; projects.forEach(p => visible[p] = true);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+let selected = -1, query = '';
+const LABEL = P.map(p => `<b>${esc(p.p)}</b> · ${p.k}<br>${esc(p.t.slice(0, 90))}`);
+
+function traces() {
+  const q = query.toLowerCase();
+  // One trace for every visible point: each extra scatter3d trace is its own WebGL draw and pick pass,
+  // and 33 of them made rotating stall the page.
+  const idx = []; P.forEach((p, i) => { if (visible[p.p]) idx.push(i); });
+  const muted = css('--muted');
+  const out = [{ type: 'scatter3d', mode: 'markers', name: 'notes',
+      x: idx.map(i => P[i].x), y: idx.map(i => P[i].y), z: idx.map(i => P[i].z), customdata: idx,
+      text: idx.map(i => LABEL[i]), hovertemplate: '%{text}<extra></extra>',
+      marker: { size: 2.4, color: idx.map(i => color[P[i].p] || muted), opacity: q ? 0.12 : 0.78 } }];
+  const hit = [];
+  if (q) { P.forEach((p, i) => { if (visible[p.p] && p.t.toLowerCase().includes(q)) hit.push(i); });
+    document.getElementById('qhint').textContent = `${hit.length} ${hit.length === 1 ? 'note contains' : 'notes contain'} "${query}".`;
+  } else {
+    document.getElementById('qhint').textContent = 'Drag to rotate, scroll to zoom. Click a dot for its nearest notes.';
+  }
+  out.push({ type: 'scatter3d', mode: 'markers', name: 'match', showlegend: false,
+      x: hit.map(i => P[i].x), y: hit.map(i => P[i].y), z: hit.map(i => P[i].z), customdata: hit,
+      text: hit.map(i => LABEL[i]), hovertemplate: '%{text}<extra></extra>',
+      marker: { size: 4, color: hit.map(i => color[P[i].p] || css('--muted')), opacity: 1, line: { width: 0 } } });
+  out.push(selTrace());
+  return out;
+}
+function selTrace() {
+  const ids = selected >= 0 ? [selected, ...P[selected].n.map(n => n[0])] : [];
+  return ({ type: 'scatter3d', mode: 'markers', name: 'selected', showlegend: false,
+      x: ids.map(i => P[i].x), y: ids.map(i => P[i].y), z: ids.map(i => P[i].z), customdata: ids,
+      text: ids.map(i => LABEL[i]), hovertemplate: '%{text}<extra></extra>',
+      marker: { size: ids.map((_, j) => j ? 6 : 10), color: css('--hl'), opacity: 1, symbol: ids.map((_, j) => j ? 'circle' : 'diamond') } });
+}
+function layout() {
+  const ax = { showgrid: true, gridcolor: css('--grid'), zeroline: false, showticklabels: false, title: '', showbackground: false, showspikes: false };
+  return { paper_bgcolor: css('--panel'), plot_bgcolor: css('--panel'), showlegend: false, margin: { l: 0, r: 0, t: 0, b: 0 },
+    font: { family: 'Atkinson Hyperlegible, system-ui, sans-serif', color: css('--fg') },
+    hoverlabel: { bgcolor: css('--panel'), bordercolor: css('--line'), font: { color: css('--fg'), size: 12 } },
+    scene: { xaxis: ax, yaxis: ax, zaxis: ax, aspectmode: 'cube' }, uirevision: 'keep' };
+}
+const el = document.getElementById('plot');
+function draw() { Plotly.react(el, traces(), layout(), { displaylogo: false, responsive: true, modeBarButtonsToRemove: ['toImage'] }); }
+
+function select(i) {
+  selected = i;
+  const p = P[i];
+  document.getElementById('noteEmpty').hidden = true;
+  const m = document.getElementById('noteMeta'); m.hidden = false; m.textContent = `${p.p} · ${p.k}`;
+  const t = document.getElementById('noteText'); t.hidden = false; t.textContent = p.t;
+  document.getElementById('nnLabel').hidden = false;
+  const ul = document.getElementById('nn'); ul.innerHTML = '';
+  p.n.forEach(([j, d]) => {
+    const li = document.createElement('li'); const b = document.createElement('button'); b.type = 'button';
+    b.innerHTML = `<span class="d">${d.toFixed(2)}</span><span class="t"><span class="p">${esc(P[j].p)}</span> · ${esc(P[j].t.slice(0, 110))}</span>`;
+    b.addEventListener('click', () => select(j));
+    li.appendChild(b); ul.appendChild(li);
+  });
+  const s = selTrace();
+  Plotly.restyle(el, { x: [s.x], y: [s.y], z: [s.z], customdata: [s.customdata], text: [s.text], 'marker.size': [s.marker.size], 'marker.symbol': [s.marker.symbol] }, [2]);
+}
+
+const chips = document.getElementById('chips');
+projects.forEach(proj => {
+  const b = document.createElement('button'); b.className = 'chip'; b.type = 'button'; b.setAttribute('aria-pressed', 'true');
+  b.innerHTML = `<i style="background:${color[proj] || 'var(--muted)'}"></i>${esc(proj)} <span>${counts[proj]}</span>`;
+  b.addEventListener('click', () => { visible[proj] = !visible[proj]; b.setAttribute('aria-pressed', String(visible[proj])); draw(); });
+  chips.appendChild(b);
+});
+function setAll(v) { projects.forEach(p => visible[p] = v); chips.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(v))); draw(); }
+document.getElementById('all').addEventListener('click', () => setAll(true));
+document.getElementById('none').addEventListener('click', () => setAll(false));
+let qt; document.getElementById('q').addEventListener('input', e => { clearTimeout(qt); qt = setTimeout(() => { query = e.target.value.trim(); draw(); }, 200); });
+
+draw();
+// A drag that starts on a dot also fires plotly_click; redrawing mid-drag froze the page. Only a press
+// that barely moved counts as a click, and the redraw waits until the gesture has ended.
+let down = null, dragged = false;
+el.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; dragged = false; }, true);
+el.addEventListener('pointermove', e => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) dragged = true; }, true);
+el.addEventListener('pointerup', () => { down = null; }, true);
+el.on('plotly_click', ev => {
+  if (dragged) return;
+  const pt = ev.points && ev.points[0];
+  if (pt && pt.customdata != null) setTimeout(() => select(pt.customdata), 0);
+});
+const redraw = () => draw();
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw); } catch (e) {}
+new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>

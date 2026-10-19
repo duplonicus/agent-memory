@@ -10,6 +10,9 @@ dependencies = ["surrealdb>=2.0,<3"]
 [project.scripts]
 agent-memory = "agent_memory.cli:main"
 
+[project.optional-dependencies]
+map = ["umap-learn>=0.5", "numpy>=1.26"]   # examples/vector-map only
+
 [dependency-groups]
 dev = ["pytest>=8"]
 

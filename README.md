@@ -1,5 +1,9 @@
 # agent-memory
 
+![A 3-d map of 4,843 memory notes, coloured by project](docs/images/vector-map.png)
+
+*One person's agent memory: 4,843 notes, each embedded in 768 dimensions and squashed to 3 with UMAP. Clusters are projects and topics. Build your own with [examples/vector-map](examples/vector-map/build.py) (optional).*
+
 **Agent memory as plain files, mirrored into [SurrealDB](https://surrealdb.com): graph links, full-text and vector search in one database, across every project.** Embeddings run locally through [Ollama](https://ollama.com), on your GPU when you have one.
 
 Your coding agent forgets everything between sessions. The usual fix is to have it keep a notes file per project, and that works until there are twenty of them. Then you can no longer answer simple questions:
