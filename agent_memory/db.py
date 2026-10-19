@@ -25,8 +25,11 @@ def connect(cfg: Config) -> Surreal:
 def sql(cfg: Config, query: str, root: bool = False, db: str | None = None) -> list[dict]:
     """POST SurrealQL to /sql and return the per-statement results (status, result)."""
     env = cfg.env()
-    user, pw = ((env.get("AGENT_MEMORY_ROOT_USER", "root"), env.get("AGENT_MEMORY_ROOT_PASS", "root")) if root
-                else (env["AGENT_MEMORY_USER"], env["AGENT_MEMORY_PASS"]))
+    keys = ("AGENT_MEMORY_ROOT_USER", "AGENT_MEMORY_ROOT_PASS") if root else ("AGENT_MEMORY_USER", "AGENT_MEMORY_PASS")
+    missing = [k for k in keys if not env.get(k)]
+    if missing:  # no built-in fallback password: a default credential would end up in someone's database
+        raise RuntimeError(f"{', '.join(missing)} not set; run `agent-memory install` or add them to {cfg.env_file}")
+    user, pw = env[keys[0]], env[keys[1]]
     headers = {"Accept": "application/json", "surreal-ns": cfg.ns, "surreal-db": db or cfg.db,
                "Authorization": "Basic " + b64encode(f"{user}:{pw}".encode()).decode()}
     if not root:
