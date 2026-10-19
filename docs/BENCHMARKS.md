@@ -36,3 +36,21 @@ agent-memory demo
 printf 'why no NOAA calls at view time\nwho is the palette waiting on\nprobe battery life\n' > q.txt
 AGENT_MEMORY_DB=demo .venv/bin/python scripts/bench_search.py q.txt --reps 3
 ```
+
+## Ollama on Windows vs inside WSL, 2026-10-18
+
+**Question:** on a WSL2 machine, is embedding faster with the Windows Ollama app or with Ollama running inside WSL (through WSL's CUDA support)?
+
+**Answer: no meaningful difference.**
+
+| | Windows app | Inside WSL |
+|---|---|---|
+| One question, p50 | 17.7 ms | 16.4 ms |
+| One question, p95 | 29.7 ms | 33.5 ms |
+| Batch of 32 entries (what the sync daemon sends), p50 | 419.5 ms | 432.3 ms |
+| Batch of 32 entries, p95 | 470.4 ms | 484.0 ms |
+
+- **Same model, same results:** the same embeddinggemma files (digest 85462619ee72) on both, and the two gave identical vectors for a test query (cosine 1.000000). Both ran Ollama 0.40.4 on the GPU; the WSL server's log shows it loaded the CUDA backend on the RTX 3090.
+- **Method:** 22 questions × 5 passes (n = 110 per side) and 20 batches of 32 real entries (n = 20 per side), after a warm-up on each. The two servers were called alternately, and the order flipped every pass, so neither got a quieter GPU.
+- **Machine and time:** as above (Ryzen 7 5800X, RTX 3090, Windows 11 + WSL2 with mirrored networking), 2026-10-18 around 11:05 PM ET. The client ran in WSL, so the Windows app was reached across the WSL network boundary and the WSL one was not.
+- **Not measured:** CPU-only Ollama, an AMD GPU, or default NAT networking.
