@@ -2,7 +2,7 @@
 
 You are helping a person install agent-memory. Work through these steps with them. **Ask before every step that changes something outside this repository**, and show them what changed afterwards.
 
-1. **Check the platform and prerequisites.** Run `python3 --version` (3.12 or newer), `uv --version`, `docker --version`, and `curl -s http://127.0.0.1:11434/api/version` (Ollama; optional). Report what is missing and link the install page; do not install system packages yourself without asking.
+1. **Check the prerequisites.** Run `scripts/install-deps.sh --dry-run` (Windows: `scripts\install-deps.ps1 -DryRun`). It lists uv, Python 3.12, Docker, the SurrealDB image and Ollama as ok or missing, and the exact commands it would run. Show the person the list; the installer in step 3 offers to install what's missing, and they choose which.
 2. **Ask where their projects live** (default `~/dev`) and where the cross-project notes should go (default `~/agent-notes`).
 3. **Run the installer** from the repository root: `./install.sh --projects <dirs> --notes <dir>` (Windows: `.\install.ps1 ...`). It asks before each change. Let the person answer, or pass `--yes` only after they have agreed to all of it.
 4. **Read back what it did.** Show the new SessionStart entry in `~/.claude/settings.json`, the appended section at the end of `~/.claude/CLAUDE.md`, and the output of `agent-memory status`.
