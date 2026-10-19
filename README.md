@@ -1,8 +1,11 @@
 # agent-memory
 
-![A 3-d map of 4,843 memory notes, coloured by project](docs/images/vector-map.png)
+<p>
+  <img src="docs/images/vector-map.png" width="49%" alt="A 3-d map of 4,843 memory notes, coloured by project">
+  <img src="docs/images/graph.png" width="49%" alt="SurrealDB Studio's graph view: LOG lines linked to their projects and sessions">
+</p>
 
-*One person's agent memory: 4,843 notes, each embedded in 768 dimensions and squashed to 3 with UMAP. Clusters are projects and topics. Build your own with [examples/vector-map](examples/vector-map/build.py) (optional).*
+*Left: one person's agent memory, 4,843 notes embedded in 768 dimensions and squashed to 3 with UMAP; clusters are projects and topics ([build your own](examples/vector-map/build.py), optional). Right: the same memory as a graph in SurrealDB Studio, LOG lines linked to the projects they're about and the sessions that wrote them.*
 
 **Agent memory as plain files, mirrored into [SurrealDB](https://surrealdb.com): graph links, full-text and vector search in one database, across every project.** Embeddings run locally through [Ollama](https://ollama.com), on your GPU when you have one.
 
