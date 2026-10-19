@@ -83,7 +83,7 @@ One hybrid search, keyword and vector fused in a single SurrealDB query, on 5,19
 
 p50 is the typical search (half were faster); p95 is the slow end (only 1 in 20 took longer).
 
-Measured 2026-10-18: 22 questions × 5 passes (n = 110) on a Ryzen 7 5800X in WSL2, with SurrealDB 3.3.4 in Docker and Ollama on Windows. A one-shot `search` command adds about 0.25 s of Python start-up. Method, setup and what this does not measure: [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+Measured 2026-10-18: 22 questions × 5 passes (n = 110). The embedding ran on the GPU (RTX 3090, Ollama on Windows); the search itself runs on the CPU (Ryzen 7 5800X), in SurrealDB 3.3.4 under Docker, called from WSL2. A one-shot `search` command adds about 0.25 s of Python start-up. Method, setup and what this does not measure: [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
 ## Quickstart
 
