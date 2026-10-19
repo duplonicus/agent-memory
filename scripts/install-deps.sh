@@ -11,8 +11,8 @@
 #   Python   uv python install 3.12
 #   Docker   https://docs.docker.com/engine/install/ (convenience script) + linux-postinstall (docker group)
 #   SurrealDB docker pull surrealdb/surrealdb:v3.3.4
-#   Ollama   Linux: https://docs.ollama.com/linux ; WSL: the Windows app via winget (Ollama.Ollama),
-#            so it runs on the GPU natively, on its default port 11434
+#   Ollama   Linux: https://docs.ollama.com/linux ; WSL: the Windows app via winget (Ollama.Ollama), on its
+#            default port 11434 (same speed as Ollama inside WSL, measured: docs/BENCHMARKS.md)
 set -uo pipefail
 
 YES=0; DRY=0; CHECK=0
@@ -91,7 +91,7 @@ declare -A LABEL=(
   [python]="Python 3.12 (installed by uv)"
   [docker]="Docker Engine$( [ "$WSL" = 1 ] && echo ' inside WSL')"
   [surreal]="SurrealDB 3.3.4 image"
-  [ollama]="Ollama$( [ "$WSL" = 1 ] && echo ' for Windows (recommended for speed; GPU, port 11434)' || echo ' (port 11434)'), for search by meaning"
+  [ollama]="Ollama$( [ "$WSL" = 1 ] && echo ' for Windows (GPU, port 11434)' || echo ' (port 11434)'), for search by meaning"
 )
 
 missing=()
