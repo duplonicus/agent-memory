@@ -60,6 +60,18 @@ The search line fuses keyword (BM25) and vector hits in one SurrealDB query. The
 
 Also there: `fn::overdue()` (past their `review by` date), `fn::stale_nows(14)` (NOW.md files nobody touched in two weeks), `fn::conflicts()` (memories marked as contradicting each other), `fn::history('<memory>')`, `fn::entries('<project>', 'decided_against')` and `fn::logs('<project>')`. SurrealDB Studio can browse all of it as a graph.
 
+## Speed
+
+One hybrid search, keyword and vector fused in a single SurrealDB query, on 5,190 real memory entries:
+
+| | p50 | p95 |
+|---|---|---|
+| Embed the question (Ollama, RTX 3090) | 23.6 ms | 32.8 ms |
+| Hybrid search in SurrealDB | 14.6 ms | 20.5 ms |
+| **Both** | **38.8 ms** | **50.4 ms** |
+
+Measured 2026-10-18: 22 questions × 5 passes (n = 110) on a Ryzen 7 5800X in WSL2, with SurrealDB 3.3.4 in Docker and Ollama on Windows. A one-shot `search` command adds about 0.25 s of Python start-up. Method, setup and what this does not measure: [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+
 ## Quickstart
 
 Needs Python 3.12+, [uv](https://docs.astral.sh/uv/), [Docker](https://docs.docker.com/get-started/get-docker/) for [SurrealDB](https://surrealdb.com) 3.3.4 (or your own SurrealDB), and optionally [Ollama](https://ollama.com); without Ollama, search is keyword only. **The installer checks for all of them first** and, if any are missing, asks whether to install them: you get a checklist of what's missing, untick what you'd rather install yourself, and it runs each vendor's own installer, showing every command first. On WSL it installs Ollama as the Windows app (recommended for speed) through winget. To see the list without changing anything: `scripts/install-deps.sh --dry-run`.
