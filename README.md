@@ -89,12 +89,36 @@ Measured 2026-10-18: 22 questions × 5 passes (n = 110). The embedding ran on th
 
 ## Quickstart
 
-Needs Python 3.12+, [uv](https://docs.astral.sh/uv/), [Docker](https://docs.docker.com/get-started/get-docker/) for [SurrealDB](https://surrealdb.com) 3.3.4 (or your own SurrealDB), and optionally [Ollama](https://ollama.com); without Ollama, search is keyword only. **The installer checks for all of them first** and, if any are missing, asks whether to install them: you get a checklist of what's missing, untick what you'd rather install yourself, and it runs each vendor's own installer, showing every command first. On WSL it installs Ollama as the Windows app through winget. To see the list without changing anything: `scripts/install-deps.sh --dry-run`.
+What it needs. **You don't have to install any of these first:** the installer checks for them and offers to install whatever is missing.
+
+- [Claude Code](https://code.claude.com/docs/en/overview), the agent this is built for (the one thing it won't install for you)
+- [uv](https://docs.astral.sh/uv/), which also installs [Python](https://www.python.org/downloads/) 3.12 if you don't have it
+- [Docker](https://docs.docker.com/get-started/get-docker/), to run [SurrealDB](https://surrealdb.com) 3.3.4 (or bring your own SurrealDB)
+- [Ollama](https://ollama.com), optional: without it, search is keyword only. On WSL it goes in as the Windows app.
+
+If anything is missing, the installer shows a checklist. Type a number to untick something you'd rather install yourself, then press Enter, and it runs each vendor's own installer, showing every command first:
+
+```text
+agent-memory dependencies (WSL2):
+  [ok]      uv (Python package manager)
+  [ok]      Python 3.12 (installed by uv)
+  [missing] Docker Engine inside WSL
+  [missing] SurrealDB 3.3.4 image
+  [ok]      Ollama for Windows (GPU, port 11434), for search by meaning
+
+Install these? Type a number to toggle it, Enter to go ahead, q to quit.
+  1. [x] Docker Engine inside WSL
+  2. [x] SurrealDB 3.3.4 image
+>
+```
+
+To see the list and the commands without changing anything: `scripts/install-deps.sh --dry-run`.
 
 ```bash
 git clone https://github.com/duplonicus/agent-memory && cd agent-memory
 ./install.sh          # checks dependencies, then asks before every change outside the repo; --yes to accept all
 agent-memory demo     # invented demo projects in their own database: the brief, the queries, a search
+                      # ("command not found"? open a new terminal: the installer put it in ~/.local/bin)
 ```
 
 On Windows, run `.\install.ps1` in PowerShell (its dependency step uses winget: uv, Docker Desktop, Ollama). Or point your agent at [INSTALL_FOR_AGENTS.md](INSTALL_FOR_AGENTS.md) and let it do the install with you.
