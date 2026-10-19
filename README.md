@@ -5,9 +5,11 @@
   <img src="docs/images/graph.png" width="49%" alt="SurrealDB Studio's graph view: LOG lines linked to their projects and sessions">
 </p>
 
-*Left: one person's agent memory, 4,843 notes embedded in 768 dimensions and squashed to 3 with UMAP; clusters are projects and topics ([build your own](examples/vector-map/build.py), optional). Right: the same memory as a graph in SurrealDB Studio, LOG lines linked to the projects they're about and the sessions that wrote them.*
-
 **Agent memory as plain files, mirrored into [SurrealDB](https://surrealdb.com): graph links, full-text and vector search in one database, across every project.** Embeddings run locally through [Ollama](https://ollama.com), on your GPU when you have one.
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE) ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue) ![SurrealDB 3.3.4](https://img.shields.io/badge/SurrealDB-3.3.4-ff00a0) ![Built for Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-d97757)
+
+<sub>Left: one person's agent memory, 4,843 notes embedded in 768 dimensions and squashed to 3 with UMAP; clusters are projects and topics (<a href="examples/vector-map/build.py">build your own</a>, optional). Right: the same memory as a graph in SurrealDB Studio, LOG lines linked to the projects they're about and the sessions that wrote them.</sub>
 
 Your coding agent forgets everything between sessions. The usual fix is to have it keep a notes file per project, and that works until there are twenty of them. Then you can no longer answer simple questions:
 
