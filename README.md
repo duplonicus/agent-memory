@@ -9,7 +9,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE) ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue) ![SurrealDB 3.3.4](https://img.shields.io/badge/SurrealDB-3.3.4-ff00a0) ![Built for Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-d97757)
 
-<sub>Left: one person's agent memory, 4,843 notes embedded in 768 dimensions and squashed to 3 with UMAP; clusters are projects and topics (<a href="examples/vector-map/build.py">build your own</a>, optional). Right: the same memory as a graph in SurrealDB Studio, LOG lines linked to the projects they're about and the sessions that wrote them.</sub>
+<sub>Left: one person's agent memory, 4,843 notes when the map was built (2026-10-16), embedded in 768 dimensions and squashed to 3 with UMAP; clusters are projects and topics (<a href="examples/vector-map/build.py">build your own</a>, optional). Right: the same memory as a graph in SurrealDB Studio, LOG lines linked to the projects they're about and the sessions that wrote them.</sub>
 
 Your coding agent forgets everything between sessions. The usual fix is to have it keep a notes file per project, and that works until there are twenty of them. Then you can no longer answer simple questions:
 
@@ -23,7 +23,7 @@ With agent-memory, **the agent keeps its own notes and you don't write any.** Th
 
 ## What a session sees
 
-A SessionStart hook prints a brief before your first prompt: the cross-project NOW.md, this project's NOW.md, the last LOG lines, and warnings. Overdue threads go first. It is **capped at 6 KB** because Claude Code shows only 10,000 characters of hook output; anything longer becomes a 2,000-character preview, and nothing asks the agent to read the rest. A long NOW.md is clipped per item and marked `[+N chars]`, never cut silently.
+A SessionStart hook prints a brief before your first prompt: the cross-project NOW.md, this project's NOW.md, the last LOG lines, and warnings. Overdue threads go first. It is **capped at 6 KB** because Claude Code shows only 10,000 characters of hook output; anything longer becomes a 2,000-character preview, and nothing asks the agent to read the rest. A long NOW.md is clipped per item and marked `[+N chars]`, never cut silently. An excerpt of the brief for the demo's Tidepool project, as if it lived in `~/dev` (some sections left out here to keep it short):
 
 ```text
 === this session ===
@@ -49,6 +49,8 @@ OVERDUE - Waiting on Marco: whether the VPS can take production traffic, or we m
 When the repo has commits newer than its NOW.md, the brief opens with `!!! STALE`. When sessions edited files but never wrote a LOG line, it lists them by tag.
 
 ## Ask across projects
+
+Excerpts from the demo (`agent-memory demo` prints them in full):
 
 ```text
 $ agent-memory query "RETURN fn::waiting_on()"
