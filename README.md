@@ -90,7 +90,7 @@ agent-memory demo     # invented demo projects in their own database: the brief,
 
 On Windows, run `.\install.ps1` in PowerShell (its dependency step uses winget: uv, Docker Desktop, Ollama). Or point your agent at [INSTALL_FOR_AGENTS.md](INSTALL_FOR_AGENTS.md) and let it do the install with you.
 
-The installer writes `~/.config/agent-memory/config.toml` and an `.env` with random passwords, starts SurrealDB in [Docker](https://www.docker.com) (loopback only), applies the schema, offers to download the embedding model (about 620 MB), and adds the SessionStart hook, the `/sum` and `/search` skills and a short conventions section to `~/.claude`. Existing `settings.json` and `CLAUDE.md` are backed up, then added to. Nothing is overwritten.
+The installer writes `~/.config/agent-memory/config.toml` and an `.env` with random passwords, starts SurrealDB in [Docker](https://www.docker.com) (loopback only), applies the schema, offers to download the embedding model (about 620 MB), and adds the hooks (the session-start brief and the four that keep the notes current), the `/sum` and `/search` skills and a short conventions section to `~/.claude`. Existing `settings.json` and `CLAUDE.md` are backed up, then added to. Nothing is overwritten.
 
 ## Start the agent in the project folder
 
@@ -139,6 +139,7 @@ Run `.\install.ps1` in PowerShell. Everything runs as Windows programs: agent-me
 3. **Graph edges tie it together.** Entries and LOG lines point at their project, LOG lines at the session that wrote them, memories at the memories they supersede or contradict.
 4. **Ollama embeds each block** (embeddinggemma, 768 dimensions) into an HNSW index in the same database.
 5. **The SessionStart hook reads the files, not the database.** A session starts with its brief even when SurrealDB is down.
+6. **Four more hooks keep the notes current**, because conventions alone rely on the agent remembering, and it doesn't. A turn that ends after a commit, or after real work with no LOG line, is sent back once to write it down. A message that sounds like a decision ("let's not", "instead", "waiting on") arrives with a reminder to record it. LOG.md is append-only: a whole-file rewrite is refused. A context compaction leaves a LOG line pointing at the transcript. Each one only nudges; none can trap a session ([agent_memory/handoff.py](agent_memory/handoff.py)).
 
 **What gets indexed, and what doesn't.** Only the memory: your `CLAUDE.md` and `rules/`, Claude Code's memory files, the shared notes folder, and in each project its `NOW.md`, its `state/` notes and its `CLAUDE.md`. **Not code, READMEs or other repo docs.** A session working in a project already reads that project's files, and grep finds code faster and more exactly than a search by meaning would. The cross-project memory is the part nothing else can answer.
 

@@ -7,7 +7,8 @@
     agent-memory sync [--force]     one pass, files -> SurrealDB
     agent-memory daemon             the sync loop (the service runs this)
     agent-memory schema             apply schema.surql and functions.surql (idempotent)
-    agent-memory hook               the SessionStart hook: reads the hook JSON on stdin, prints the brief
+    agent-memory hook [name]        a Claude Code hook, event JSON on stdin: session-start (the brief, default),
+                                    stop, prompt, pre-write, pre-compact (agent_memory/handoff.py)
     agent-memory status             config paths, database and Ollama reachability, daemon status
 """
 from __future__ import annotations
@@ -97,7 +98,7 @@ def main(argv: list[str] | None = None) -> None:
     cmd, args = argv[0], argv[1:]
     if cmd == "hook":
         from .hook import main as hook_main
-        hook_main()
+        hook_main(args)
         return
     if cmd == "install":
         from .install import main as install_main

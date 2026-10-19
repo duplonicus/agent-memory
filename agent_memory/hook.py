@@ -97,13 +97,27 @@ def session_start(cfg: Config, data: dict) -> str:
     return "\n".join(head) + body
 
 
-def main() -> None:
+def main(args: list[str] | None = None) -> None:
+    """`agent-memory hook [session-start|stop|prompt|pre-write|pre-compact]`, event JSON on stdin."""
+    from .config import load
+    from .handoff import HOOKS
+    which = (args or ["session-start"])[0]
     try:
         data = json.loads(sys.stdin.read() or "{}")
     except (json.JSONDecodeError, OSError):
         data = {}
-    from .config import load
+    if which == "session-start":
+        try:
+            print(session_start(load(), data))
+        except Exception as e:  # noqa: BLE001 - a broken brief must never block a session
+            print(f"(agent-memory brief failed: {type(e).__name__}: {e})")
+        return
+    if which not in HOOKS:
+        print(f"agent-memory hook: unknown hook {which!r}", file=sys.stderr)
+        return
     try:
-        print(session_start(load(), data))
-    except Exception as e:  # noqa: BLE001 - a broken brief must never block a session
-        print(f"(agent-memory brief failed: {type(e).__name__}: {e})")
+        out = HOOKS[which](load(), data)
+    except Exception:  # noqa: BLE001 - a broken hook must fail open, never block the session
+        return
+    if out:
+        print(json.dumps(out))

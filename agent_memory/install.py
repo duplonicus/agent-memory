@@ -15,6 +15,8 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -23,7 +25,18 @@ from .config import CONFIG_DIR, REPO, STATE_DIR, Config, load
 from .db import apply_schema
 
 TEMPLATES = REPO / "templates"
-HOOK_MARK = "agent_memory hook"
+# (event, hook name, matcher) for every hook the installer adds; agent_memory/hook.py runs them.
+HOOKS = [("SessionStart", "session-start", None), ("Stop", "stop", None), ("UserPromptSubmit", "prompt", None),
+         ("PreToolUse", "pre-write", "Write"), ("PreCompact", "pre-compact", None)]
+
+
+def _ours(hook: dict, name: str) -> bool:
+    """Is this settings.json hook entry agent-memory's `name` hook? (Before 0.1 the brief had no name.)"""
+    cmd = str(hook.get("command", ""))
+    if "agent_memory hook" not in cmd:
+        return False
+    rest = cmd.split("agent_memory hook", 1)[1].strip()
+    return rest == name or (name == "session-start" and rest == "")
 UNIT = "agent-memory-sync.service"
 TASK = "agent-memory sync"
 
@@ -86,14 +99,25 @@ class Installer:
 
     # 2. SurrealDB
     def database(self, cfg: Config) -> bool:
+        port = urllib.parse.urlsplit(cfg.surreal_url).port or 8000
         if self._up(f"{cfg.surreal_url}/health"):
             print(f"SurrealDB answers at {cfg.surreal_url}")
         elif shutil.which("docker") is None:
             self.todo.append("Install Docker (or run SurrealDB 3.3.4 yourself), then rerun `agent-memory install`.")
             return False
-        elif self.ask(f"Start SurrealDB 3.3.4 in Docker (compose project agent-memory, loopback port 8000)?"):
-            subprocess.run(["docker", "compose", "-f", str(REPO / "compose.yaml"), "-p", "agent-memory",
-                            "--env-file", str(cfg.env_file), "up", "-d"], check=True)
+        elif self._port_taken(port):
+            self.todo.append(f"Port {port} is already in use by something that isn't answering as SurrealDB. Pick a free "
+                             f"port: set [surreal] url in {CONFIG_DIR / 'config.toml'} to it, then rerun the installer.")
+            return False
+        elif self.ask(f"Start SurrealDB 3.3.4 in Docker (compose project agent-memory, loopback port {port})?"):
+            try:
+                subprocess.run(["docker", "compose", "-f", str(REPO / "compose.yaml"), "-p", "agent-memory",
+                                "--env-file", str(cfg.env_file), "up", "-d"], check=True,
+                               env={**os.environ, "AGENT_MEMORY_PORT": str(port)})
+            except (subprocess.CalledProcessError, OSError) as e:
+                self.todo.append(f"Starting SurrealDB in Docker failed ({e}); the docker output above says why. "
+                                 f"Is Docker running?")
+                return False
             for _ in range(60):
                 if self._up(f"{cfg.surreal_url}/health"):
                     break
@@ -105,12 +129,25 @@ class Installer:
         else:
             self.todo.append("Start SurrealDB 3.3.4, then rerun `agent-memory install`.")
             return False
-        errors = apply_schema(cfg)
+        try:
+            errors = apply_schema(cfg)
+        except urllib.error.HTTPError as e:
+            # A SurrealDB that is someone else's (another project's, with its own root password) refuses ours.
+            self.todo.append(f"SurrealDB at {cfg.surreal_url} refused the root login from {cfg.env_file} (HTTP {e.code}). "
+                             f"If that server belongs to something else, point [surreal] url at a free port and rerun.")
+            return False
         if errors:
             self.todo.append("Schema errors: " + "; ".join(errors))
             return False
         self.done.append(f"applied the schema (ns {cfg.ns}, db {cfg.db})")
         return True
+
+    @staticmethod
+    def _port_taken(port: int) -> bool:
+        import socket
+        with socket.socket() as sock:
+            sock.settimeout(1)
+            return sock.connect_ex(("127.0.0.1", port)) == 0
 
     # 3. Ollama and the embedding model
     def embeddings(self, cfg: Config) -> None:
@@ -143,21 +180,27 @@ class Installer:
         exe = Path(sys.executable).as_posix()
         settings = claude / "settings.json"
         data = json.loads(settings.read_text(encoding="utf-8")) if settings.exists() else {}
-        hooks = data.setdefault("hooks", {}).setdefault("SessionStart", [])
-        if HOOK_MARK in json.dumps(hooks):
-            print("SessionStart hook already installed")
-        elif self.ask(f"Add the session-start brief hook to {settings}?"):
+        hooks = data.setdefault("hooks", {})
+        missing = [(event, name, matcher) for event, name, matcher in HOOKS
+                   if not any(_ours(h, name) for group in hooks.get(event, []) for h in group.get("hooks", []))]
+        if not missing:
+            print("agent-memory hooks already installed")
+        elif self.ask(f"Add agent-memory's hooks to {settings}? ({', '.join(n for _, n, _ in missing)}: the session-start "
+                      f"brief, plus the nudges that keep NOW.md and LOG.md current; see agent_memory/handoff.py)"):
             if settings.exists():
                 print(f"  backup: {self.backup(settings)}")
-            if os.name == "nt":
-                # Claude Code runs hooks in Git Bash on Windows, or PowerShell without it; pin PowerShell so
-                # the command means the same thing either way (& calls a quoted path).
-                hook = {"type": "command", "command": f'& "{exe}" -m {HOOK_MARK}', "shell": "powershell", "timeout": 15}
-            else:
-                hook = {"type": "command", "command": f'"{exe}" -m {HOOK_MARK}', "timeout": 15}
-            hooks.append({"hooks": [hook]})
+            for event, name, matcher in missing:
+                cmd = f"-m agent_memory hook {name}"
+                if os.name == "nt":
+                    # Claude Code runs hooks in Git Bash on Windows, or PowerShell without it; pin PowerShell so
+                    # the command means the same thing either way (& calls a quoted path).
+                    hook = {"type": "command", "command": f'& "{exe}" {cmd}', "shell": "powershell", "timeout": 15}
+                else:
+                    hook = {"type": "command", "command": f'"{exe}" {cmd}', "timeout": 15}
+                group = {"matcher": matcher, "hooks": [hook]} if matcher else {"hooks": [hook]}
+                hooks.setdefault(event, []).append(group)
             settings.write_text(encoding="utf-8", data=json.dumps(data, indent=2) + "\n")
-            self.done.append(f"added the SessionStart hook to {settings}")
+            self.done.append(f"added {len(missing)} hook(s) to {settings}")
         for name in ("sum", "search"):
             dest = claude / "skills" / name
             if dest.exists():
