@@ -60,6 +60,7 @@ def test_reads(db):
     later = conn.query("RETURN fn::overdue('2026-04-13')")
     assert ("garden-sensors", "2026-04-13") in [(r["project"], r["review_by"]) for r in later]  # memory frontmatter
     assert conn.query("RETURN fn::entries('tidepool', 'decided_against')") == [
+        "2026-03-09, Sam: predictions come from local harmonic constants, not the NOAA API at view time. The API rate-limited us at 30 charts a minute.",
         "2026-03-10, Sam: decided against a native mobile app; the PWA covers offline charts."]
     assert conn.query("RETURN fn::session('s:e03d6c58')") == [
         "- 2026-03-11 · Claude Code · tidepool + garden-sensors · shared the MQTT broker config between both projects · s:e03d6c58\n"]

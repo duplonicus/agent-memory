@@ -56,11 +56,13 @@ def test_canonical_names():
 
 def test_decided_against():
     cases = {
-        "2026-03-09, Sam: predictions come from local constants, not the NOAA API at view time.": False,
         "2026-03-10, Sam: decided against a native mobile app.": True,
-        "We will NOT add accounts.": True,
+        "Not pushed; the release waits for the palette.": True,
+        "Use MQTT, not HTTP polling.": True,          # a rejected alternative counts
+        "That rules out a native app.": True,
         "Parked until spring.": True,
-        "Use MQTT, not HTTP polling.": False,
+        "2026-03-05, Sam: MQTT for the probes; they sleep between readings.": False,
+        "Favourite stations live in local storage.": False,
     }
     for text, against in cases.items():
         assert bool(AGAINST.search(text)) is against, text

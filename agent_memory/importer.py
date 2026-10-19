@@ -19,8 +19,11 @@ from .sources import Source, enumerate_sources
 
 # - 2026-10-18 · Claude Code · my-app · what happened · s:1a2b3c4d
 LOG_LINE = re.compile(r"^- (\d{4}-\d{2}-\d{2}) · ([^·]+?) · ([^·]+?) · (.*?)(?: · (s:[A-Za-z0-9_-]+))?[ \t]*$")
-# A capital NOT counts ("NOT doing X"); a lowercase "not" inside a sentence does not ("X, not Y").
-AGAINST = re.compile(r"(?i:decided against|declined|decided not|not to |won'?t |no longer|parked|dropped|rejected)|\bNOT\b")
+# Deliberately wide: "not", "no longer", "rules out" anywhere in a decision files it under decided_against.
+# A few plain decisions land there too ("X does not Y"); a narrower pattern (capital NOT only) was tried on
+# 2026-10-18 against 153 real decisions and lost about 20 genuine ones ("Not pushed.", "not built for now")
+# to fix about 10, so the wide net stays.
+AGAINST = re.compile(r"decided against|declined|decided not|not to |won'?t |NOT\b|no longer|parked|dropped|rejected|rules? out|ruled out", re.I)
 NOW_SECTIONS = [("state", "state"), ("where", "where"), ("next", "next"), ("decision", "decision"),
                 ("open", "open_thread"), ("gotcha", "gotcha")]
 REVIEW_BY = re.compile(r"\(review by (\d{4}-\d{2}-\d{2})\)", re.I)
