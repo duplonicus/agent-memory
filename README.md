@@ -19,7 +19,7 @@ Your coding agent forgets everything between sessions. The usual fix is to have 
 
 With agent-memory, **the agent keeps its own notes and you don't write any.** They are plain markdown files you can open and read whenever you want. A small daemon mirrors them into SurrealDB, so one query answers those questions across all your projects. Built for Claude Code. The conventions work with any agent that reads files, and the hooks and skills could be adapted to agents with the same building blocks, such as Codex, which has SessionStart hooks and SKILL.md skills.
 
-> **This repo is a guide, not an out-of-the-box product.** It's one working setup, shared as-is. But don't worry: your agent can set everything up for you, even if none of the prerequisites are installed yet (where a step needs your admin password, it hands you that one command to run). Just point it at **[Instructions for Agents](INSTALL_FOR_AGENTS.md)**.
+> **This repo is a guide, not an out-of-the-box product.** It's one working setup, shared as-is. But don't worry: your agent can set everything up for you, even if none of the prerequisites are installed yet (where a step needs your admin password, it hands you that one command to run). Just point it at **[Instructions for Agents](INSTALL_FOR_AGENTS.md)**. To understand it before you install it: [how the pieces fit](docs/ARCHITECTURE.md) and [what each hook does](docs/HOOKS.md).
 
 ## What a session sees
 
@@ -125,7 +125,7 @@ agent-memory demo     # invented demo projects in their own database: the brief,
 
 On Windows, run `.\install.ps1` in PowerShell (its dependency step uses winget: uv, Docker Desktop, Ollama). Or point your agent at [INSTALL_FOR_AGENTS.md](INSTALL_FOR_AGENTS.md) and let it do the install with you.
 
-The installer writes `~/.config/agent-memory/config.toml` and an `.env` with random passwords, starts SurrealDB in [Docker](https://www.docker.com) (loopback only), applies the schema, offers to download the embedding model (about 620 MB), and adds the hooks (the session-start brief and the four that keep the notes current), the `/sum` and `/search` skills and a short conventions section to `~/.claude`. Existing `settings.json` and `CLAUDE.md` are backed up, then added to. Nothing is overwritten.
+The installer writes `~/.config/agent-memory/config.toml` and an `.env` with random passwords, starts SurrealDB in [Docker](https://www.docker.com) (loopback only), applies the schema, offers to download the embedding model (about 620 MB), and adds the [hooks](docs/HOOKS.md) (the session-start brief and the four that keep the notes current), the `/sum` and `/search` skills and a short conventions section to `~/.claude`. Existing `settings.json` and `CLAUDE.md` are backed up, then added to. Nothing is overwritten.
 
 ## Start the agent in the project folder
 
@@ -169,16 +169,13 @@ Run `.\install.ps1` in PowerShell. Everything runs as Windows programs: agent-me
 
 ## How it works
 
-1. **The agent writes markdown; you don't have to.** The [CLAUDE.md section](templates/CLAUDE.md) the installer adds teaches it to keep one `NOW.md` per project (current state, six sections) and one shared `LOG.md` (one line per session), next to Claude Code's own memory files and your `CLAUDE.md`. These files are the memory. You can read them any time; nothing expects you to write them.
-2. **The sync daemon copies them into SurrealDB every 20 seconds, one way.** Every block (bullet, paragraph, heading) becomes a row with its exact bytes, so each file can be rebuilt byte for byte. An edited file only touches the blocks that changed; a removed block is marked superseded, not deleted.
-3. **Graph edges tie it together.** Entries and LOG lines point at their project, LOG lines at the session that wrote them, memories at the memories they supersede or contradict.
-4. **Ollama embeds each block** (embeddinggemma, 768 dimensions) into an HNSW index in the same database.
-5. **The SessionStart hook reads the files, not the database.** A session starts with its brief even when SurrealDB is down.
-6. **Four more hooks keep the notes current**, because conventions alone rely on the agent remembering, and it doesn't. A turn that ends after a commit, or after real work with no LOG line, is sent back once to write it down. A message that sounds like a decision ("let's not", "instead", "waiting on") arrives with a reminder to record it. LOG.md is append-only: a whole-file rewrite is refused. A context compaction leaves a LOG line pointing at the transcript. Each one only nudges; none can trap a session ([agent_memory/handoff.py](agent_memory/handoff.py)).
+1. **The agent writes markdown; you don't have to.** The [CLAUDE.md section](templates/CLAUDE.md) the installer adds teaches it to keep one `NOW.md` per project and one shared `LOG.md`, next to Claude Code's own memory files. You can read them any time; nothing expects you to write them.
+2. **A sync daemon copies the files into SurrealDB every 20 seconds, one way,** block by block, with graph edges to projects and sessions, and Ollama embeds each block for search by meaning.
+3. **Five hooks** give each session its brief and keep the notes current: a turn that ends after a commit, or after real work with no LOG line, is sent back once to write it down. Each hook, what triggers it and why it exists: [docs/HOOKS.md](docs/HOOKS.md).
+
+How all the pieces fit, with what runs where, a session's life, a note's path into the database, the data model and the design decisions: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
 **What gets indexed, and what doesn't.** Only the memory: your `CLAUDE.md` and `rules/`, Claude Code's memory files, the shared notes folder, and in each project its `NOW.md`, its `state/` notes and its `CLAUDE.md`. **Not code, READMEs or other repo docs.** A session working in a project already reads that project's files, and grep finds code faster and more exactly than a search by meaning would. The cross-project memory is the part nothing else can answer.
-
-A moved or renamed project folder keeps its ids, vectors and edges: a new file whose bytes match exactly one file that vanished in the same pass is treated as the same file. A sync that would retire more than 10 files at once (or more than a fifth of them, when that is more) is refused, so an unmounted drive cannot wipe the mirror.
 
 ## The conventions
 
