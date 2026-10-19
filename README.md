@@ -62,6 +62,8 @@ Also there: `fn::overdue()` (past their `review by` date), `fn::stale_nows(14)` 
 
 ## Speed
 
+**Very fast, because there is no LLM anywhere in it.** Nothing summarises, extracts or rewrites your notes, at sync time or at search time. The only model is a small embedding model, embeddinggemma (308M parameters), and it needs about **690 MB of VRAM**, so it fits on almost any GPU and stays loaded. Graph-RAG tools run an LLM over every chunk to build their index, which makes ingest slow; here a changed note is embedded in tens of milliseconds (about 13 ms per block in a batch of 32).
+
 One hybrid search, keyword and vector fused in a single SurrealDB query, on 5,190 real memory entries:
 
 | | p50 | p95 |
