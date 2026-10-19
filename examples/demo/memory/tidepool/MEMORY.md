@@ -1,0 +1,2 @@
+- [No NOAA at view time](no-noaa-at-view-time.md) — charts compute tides locally
+- [NOAA cache TTL](noaa-cache-ttl.md) — old approach, replaced

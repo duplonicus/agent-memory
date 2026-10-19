@@ -1,0 +1,26 @@
+# agent-memory settings. ~ and $VARS are expanded.
+
+[paths]
+claude_dir = "~/.claude"
+# The cross-project NOW.md and LOG.md.
+notes_dir = "~/agent-notes"
+# Every <dir>/<project>/NOW.md under these folders is a project; its notes go in <project>/state/.
+project_dirs = ["~/dev"]
+
+[surreal]
+url = "http://127.0.0.1:8000"
+ns = "agent_memory"
+db = "state"
+
+[embed]
+enabled = true
+url = "http://127.0.0.1:11434"   # Ollama; it uses your GPU when it finds one
+model = "embeddinggemma"
+
+[brief]
+budget = 6000   # bytes of NOW.md text in the session-start brief (Claude Code shows 10,000 characters of hook output)
+
+[projects]
+# Spellings of one project that should be one node: "old-name" = "new-name".
+aliases = {}
+drop = []

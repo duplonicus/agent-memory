@@ -1,0 +1,16 @@
+# SurrealDB for agent-memory. Loopback only: the data is your notes.
+# Pinned: 3.3.4 is the version this code is tested against (see the planner note in functions.surql).
+# Credentials come from the .env that `agent-memory install` writes (--env-file).
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v3.3.4
+    user: "0:0"
+    ports:
+      - "127.0.0.1:${AGENT_MEMORY_PORT:-8000}:8000"
+    volumes:
+      - agent-memory-data:/data
+    command: start --user ${AGENT_MEMORY_ROOT_USER:-root} --pass ${AGENT_MEMORY_ROOT_PASS:?run agent-memory install first} surrealkv:/data/db
+    restart: unless-stopped
+
+volumes:
+  agent-memory-data:

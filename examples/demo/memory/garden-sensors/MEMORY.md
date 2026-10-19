@@ -1,0 +1,2 @@
+- [Probe sleep](probe-sleep.md) — deep sleep between readings
+- [Always-on gateway probe](always-on-gateway-probe.md) — probe 1 relays

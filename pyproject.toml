@@ -1,0 +1,27 @@
+[project]
+name = "agent-memory"
+version = "0.1.0"
+description = "Agent memory as plain files, mirrored into SurrealDB for graph, full-text and vector search across every project"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = ["surrealdb>=2.0,<3"]
+
+[project.scripts]
+agent-memory = "agent_memory.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["agent_memory"]
+
+[tool.setuptools.package-data]
+agent_memory = ["*.surql"]
