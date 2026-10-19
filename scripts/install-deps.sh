@@ -48,6 +48,18 @@ run() {  # show, then run (or only show on --dry-run)
   bash -c "$*"
 }
 
+# Commands that need sudo, when there is no terminal to type a password into (an agent running this):
+# printed at the end for the person to run themselves, instead of failing half-way.
+FOR_YOU=()
+root() {
+  if [ "$DRY" = 1 ] || [ -t 0 ] || sudo -n true 2>/dev/null; then
+    run "$*"
+  else
+    echo "  needs your password, saved for the end: $*"
+    FOR_YOU+=("$*")
+  fi
+}
+
 install_uv()     { run "curl -LsSf https://astral.sh/uv/install.sh | sh"; }
 install_python() { run "uv python install 3.12"; }
 install_docker() {
@@ -56,16 +68,22 @@ install_docker() {
     echo "  instead of installing a second Docker inside WSL. Skipping."
     return 0
   fi
-  run "curl -fsSL https://get.docker.com -o /tmp/get-docker.sh && sudo sh /tmp/get-docker.sh"
-  run "sudo usermod -aG docker \"\$USER\""
+  run "curl -fsSL https://get.docker.com -o /tmp/get-docker.sh"
+  root "sudo sh /tmp/get-docker.sh"
+  root "sudo usermod -aG docker ${USER:-$(id -un)}"
   if [ -d /run/systemd/system ]; then
-    run "sudo systemctl enable --now docker.service containerd.service"
+    root "sudo systemctl enable --now docker.service containerd.service"
   else
     echo "  systemd is not running, so Docker won't start on its own. In WSL, add [boot] systemd=true to /etc/wsl.conf."
   fi
   echo "  Log out and back in (in WSL: wsl.exe --shutdown, then reopen) so the docker group applies."
 }
-install_surreal() { run "docker pull $SURREAL_IMAGE || sudo docker pull $SURREAL_IMAGE"; }
+install_surreal() {
+  if [ "${#FOR_YOU[@]}" -gt 0 ]; then
+    FOR_YOU+=("docker pull $SURREAL_IMAGE"); echo "  waits for Docker: saved for the end"; return 0
+  fi
+  run "docker pull $SURREAL_IMAGE || sudo -n docker pull $SURREAL_IMAGE"
+}
 install_ollama() {
   if [ "$WSL" = 1 ]; then
     if ! command -v winget.exe >/dev/null 2>&1; then
@@ -148,6 +166,12 @@ for n in "${NAMES[@]}"; do
 done
 echo
 [ "$DRY" = 1 ] && { echo "Dry run: nothing was changed."; exit 0; }
+if [ "${#FOR_YOU[@]}" -gt 0 ]; then
+  echo "These need your password, so run them yourself (in Claude Code, prefix each with ! ):"
+  printf '  %s\n' "${FOR_YOU[@]}"
+  echo "Then log out and back in (WSL: wsl.exe --shutdown) so the docker group applies."
+  echo
+fi
 if [ "${#failed[@]}" -gt 0 ]; then
   echo "Failed: ${failed[*]}. The output above says why."
   exit 1

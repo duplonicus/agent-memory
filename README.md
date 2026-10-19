@@ -10,6 +10,8 @@ Your coding agent forgets everything between sessions. The usual fix is to have 
 
 With agent-memory, **the agent keeps its own notes and you don't write any.** They are plain markdown files you can open and read whenever you want. A small daemon mirrors them into SurrealDB, so one query answers those questions across all your projects. Built for Claude Code. The conventions work with any agent that reads files, and the hook and skills could be adapted to agents with the same building blocks, such as Codex, which has SessionStart hooks and SKILL.md skills.
 
+> **This repo is a guide, not an out-of-the-box product.** It's one working setup, shared as-is. But don't worry: your agent can set everything up for you, even if none of the prerequisites are installed yet (where a step needs your admin password, it hands you that one command to run). Just point it at **[Instructions for Agents](INSTALL_FOR_AGENTS.md)**.
+
 ## What a session sees
 
 A SessionStart hook prints a brief before your first prompt: the cross-project NOW.md, this project's NOW.md, the last LOG lines, and warnings. Overdue threads go first. It is **capped at 6 KB** because Claude Code shows only 10,000 characters of hook output; anything longer becomes a 2,000-character preview, and nothing asks the agent to read the rest. A long NOW.md is clipped per item and marked `[+N chars]`, never cut silently.
@@ -137,6 +139,8 @@ Run `.\install.ps1` in PowerShell. Everything runs as Windows programs: agent-me
 3. **Graph edges tie it together.** Entries and LOG lines point at their project, LOG lines at the session that wrote them, memories at the memories they supersede or contradict.
 4. **Ollama embeds each block** (embeddinggemma, 768 dimensions) into an HNSW index in the same database.
 5. **The SessionStart hook reads the files, not the database.** A session starts with its brief even when SurrealDB is down.
+
+**What gets indexed, and what doesn't.** Only the memory: your `CLAUDE.md` and `rules/`, Claude Code's memory files, the shared notes folder, and in each project its `NOW.md`, its `state/` notes and its `CLAUDE.md`. **Not code, READMEs or other repo docs.** A session working in a project already reads that project's files, and grep finds code faster and more exactly than a search by meaning would. The cross-project memory is the part nothing else can answer.
 
 A moved or renamed project folder keeps its ids, vectors and edges: a new file whose bytes match exactly one file that vanished in the same pass is treated as the same file. A sync that would retire more than 10 files at once (or more than a fifth of them, when that is more) is refused, so an unmounted drive cannot wipe the mirror.
 
