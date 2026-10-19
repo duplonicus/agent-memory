@@ -5,9 +5,9 @@
   <img src="docs/images/graph.png" width="49%" alt="SurrealDB Studio's graph view: LOG lines linked to their projects and sessions">
 </p>
 
-**Agent memory as plain files, mirrored into [SurrealDB](https://surrealdb.com): graph links, full-text and vector search in one database, across every project.** Embeddings run locally through [Ollama](https://ollama.com), on your GPU when you have one.
+**Agent memory as plain files, mirrored into [SurrealDB](https://surrealdb.com/surrealdb): graph links, full-text and vector search in one database, across every project.** Embeddings run locally through [Ollama](https://ollama.com), on your GPU when you have one.
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/downloads/) [![SurrealDB 3.3.4](https://img.shields.io/badge/SurrealDB-3.3.4-ff00a0)](https://surrealdb.com) [![Built for Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-d97757)](https://code.claude.com/docs/en/overview)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/downloads/) [![SurrealDB 3.3.4](https://img.shields.io/badge/SurrealDB-3.3.4-ff00a0)](https://surrealdb.com/surrealdb) [![Built for Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-d97757)](https://code.claude.com/docs/en/overview)
 
 <sub>Left: one person's agent memory, 4,843 notes when the map was built (2026-10-16), embedded in 768 dimensions and squashed to 3 with UMAP; clusters are projects and topics (<a href="examples/vector-map/build.py">build your own</a>, optional). Right: the same memory as a graph in SurrealDB Studio, LOG lines linked to the projects they're about and the sessions that wrote them.</sub>
 
@@ -95,7 +95,7 @@ What it needs. **You don't have to install any of these first:** the installer c
 
 - [Claude Code](https://code.claude.com/docs/en/overview), the agent this is built for (the one thing it won't install for you)
 - [uv](https://docs.astral.sh/uv/), which also installs [Python](https://www.python.org/downloads/) 3.12 if you don't have it
-- [Docker](https://docs.docker.com/get-started/get-docker/), to run [SurrealDB](https://surrealdb.com) 3.3.4 (or bring your own SurrealDB)
+- [Docker](https://docs.docker.com/get-started/get-docker/), to run [SurrealDB](https://surrealdb.com/surrealdb) 3.3.4 (or bring your own SurrealDB)
 - [Ollama](https://ollama.com), optional: without it, search is keyword only. On WSL it goes in as the Windows app.
 
 If anything is missing, the installer shows a checklist. Type a number to untick something you'd rather install yourself, then press Enter, and it runs each vendor's own installer, showing every command first:
