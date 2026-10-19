@@ -3,7 +3,7 @@
 
 **The files are the memory; the database is a mirror for reading across them.** Every write goes to a file.
 
-**At session start** the hook prints a brief: the global NOW.md, this project's NOW.md (clipped; read it in full before changing what it covers), the last LOG lines, and sessions that worked without logging. Act on its `!!!` lines first: a STALE NOW.md is older than the repo's commits, so check `git log` and fix the NOW.md before trusting it.
+**At session start** the session-start hook prints a brief: the global NOW.md, this project's NOW.md (clipped; read it in full before changing what it covers), the last LOG lines, and sessions that worked without logging. Act on its `!!!` lines first: a STALE NOW.md is older than the repo's commits, so check `git log` and fix the NOW.md before trusting it.
 
 **Write it down when it happens, not at the end.** In the project's `NOW.md` (repo root, kept out of git with `.git/info/exclude`):
 - A decision, and especially a decision NOT to do something. Work that didn't happen leaves no other trace.

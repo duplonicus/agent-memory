@@ -17,7 +17,7 @@ Your coding agent forgets everything between sessions. The usual fix is to have 
 - **What did we claim but never check?** "Tests pass", "works on Windows", written down and never verified.
 - **Which sessions did work and logged nothing?** Every LOG line carries its session id, so the gap shows up at the next session start.
 
-With agent-memory, **the agent keeps its own notes and you don't write any.** They are plain markdown files you can open and read whenever you want. A small daemon mirrors them into SurrealDB, so one query answers those questions across all your projects. Built for Claude Code. The conventions work with any agent that reads files, and the hook and skills could be adapted to agents with the same building blocks, such as Codex, which has SessionStart hooks and SKILL.md skills.
+With agent-memory, **the agent keeps its own notes and you don't write any.** They are plain markdown files you can open and read whenever you want. A small daemon mirrors them into SurrealDB, so one query answers those questions across all your projects. Built for Claude Code. The conventions work with any agent that reads files, and the hooks and skills could be adapted to agents with the same building blocks, such as Codex, which has SessionStart hooks and SKILL.md skills.
 
 > **This repo is a guide, not an out-of-the-box product.** It's one working setup, shared as-is. But don't worry: your agent can set everything up for you, even if none of the prerequisites are installed yet (where a step needs your admin password, it hands you that one command to run). Just point it at **[Instructions for Agents](INSTALL_FOR_AGENTS.md)**.
 
@@ -141,7 +141,7 @@ The brief, the project's NOW.md and Claude Code's own project memory are all pic
 
 ## Where things run
 
-Four pieces: the **agent** (Claude Code and its hook), **your files**, **SurrealDB** with the **sync daemon**, and **Ollama** for embeddings. Each talks to the others over `127.0.0.1`, so they normally all live on one machine.
+Four pieces: the **agent** (Claude Code and its hooks), **your files**, **SurrealDB** with the **sync daemon**, and **Ollama** for embeddings. Each talks to the others over `127.0.0.1`, so they normally all live on one machine.
 
 ### Linux
 
@@ -157,14 +157,14 @@ Run Claude Code, your project folders and agent-memory **inside WSL**, as on Lin
 
 ### Windows (native, no WSL)
 
-Run `.\install.ps1` in PowerShell. Everything runs as Windows programs: agent-memory under Windows Python (uv installs it), SurrealDB in Docker Desktop, Ollama as the Windows app on port 11434, and the sync daemon as a Task Scheduler task that starts at logon. Claude Code runs hooks in Git Bash when it is installed and in PowerShell otherwise; the installer pins this hook to PowerShell so it behaves the same either way.
+Run `.\install.ps1` in PowerShell. Everything runs as Windows programs: agent-memory under Windows Python (uv installs it), SurrealDB in Docker Desktop, Ollama as the Windows app on port 11434, and the sync daemon as a Task Scheduler task that starts at logon. Claude Code runs hooks in Git Bash when it is installed and in PowerShell otherwise; the installer pins its hooks to PowerShell so they behave the same either way.
 
 ### What has been tested
 
 | | Tested | Not yet tested |
 |---|---|---|
-| Linux, WSL2 | Test suite, installer, and the hook in a real Claude Code session | The systemd service the installer writes |
-| Windows (native) | Test suite, installer and the hook with Windows Python | The Task Scheduler task; Claude Code for Windows running the hook |
+| Linux, WSL2 | Test suite, installer, and in real Claude Code sessions the session-start brief and the Stop hook (the other three hooks are tested as processes) | The systemd service the installer writes |
+| Windows (native) | Test suite (all five hooks run as processes) and installer with Windows Python; the brief through PowerShell | The Task Scheduler task; Claude Code for Windows running the hooks |
 | macOS | Nothing yet | No service either: run `agent-memory daemon` yourself |
 
 ## How it works
