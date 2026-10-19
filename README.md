@@ -7,7 +7,7 @@
 
 **Agent memory as plain files, mirrored into [SurrealDB](https://surrealdb.com): graph links, full-text and vector search in one database, across every project.** Embeddings run locally through [Ollama](https://ollama.com), on your GPU when you have one.
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE) ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue) ![SurrealDB 3.3.4](https://img.shields.io/badge/SurrealDB-3.3.4-ff00a0) ![Built for Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-d97757)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/downloads/) [![SurrealDB 3.3.4](https://img.shields.io/badge/SurrealDB-3.3.4-ff00a0)](https://surrealdb.com) [![Built for Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-d97757)](https://code.claude.com/docs/en/overview)
 
 <sub>Left: one person's agent memory, 4,843 notes when the map was built (2026-10-16), embedded in 768 dimensions and squashed to 3 with UMAP; clusters are projects and topics (<a href="examples/vector-map/build.py">build your own</a>, optional). Right: the same memory as a graph in SurrealDB Studio, LOG lines linked to the projects they're about and the sessions that wrote them.</sub>
 
