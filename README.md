@@ -86,6 +86,34 @@ The brief, the project's NOW.md and Claude Code's own project memory are all pic
 - **The same folder by two real paths is two projects to Claude Code.** On WSL, `/home/you/dev/x` and `/mnt/c/Users/you/dev/x` (or `C:\Users\you\dev\x` from a Windows launch) each get their own memory folder.
 - **On WSL's `/mnt/c`, case matters to Claude Code but not to the disk.** `cd /mnt/c/users/...` and `/mnt/c/Users/...` both work, and Claude Code treats them as two paths. One way that shows up: the global CLAUDE.md is loaded twice. Pick one spelling, or add the other to `claudeMdExcludes`.
 
+## Where things run
+
+Four pieces: the **agent** (Claude Code and its hook), **your files**, **SurrealDB** with the **sync daemon**, and **Ollama** for embeddings. Each talks to the others over `127.0.0.1`, so they normally all live on one machine.
+
+### Linux
+
+Everything runs natively. SurrealDB is a Docker container on `127.0.0.1:8000`, the sync daemon is a systemd user service (`agent-memory-sync.service`), Ollama is on its default port 11434, and Claude Code runs in your shell. The defaults need no changes.
+
+### WSL2 (Linux on Windows)
+
+Run Claude Code, your project folders and agent-memory **inside WSL**, as on Linux. Keep the projects on the Linux disk (`~/dev`), not under `/mnt/c`: it is faster, and file paths are case-sensitive the way Claude Code expects (see the path notes above). The installer is `./install.sh`, and the sync daemon is a systemd user service, which needs systemd enabled in WSL.
+
+- **SurrealDB:** Docker Desktop for Windows with WSL integration turned on, or Docker Engine installed inside WSL. Both serve `127.0.0.1:8000` to WSL.
+- **Ollama, the simple way: install it inside WSL too.** NVIDIA GPUs work in WSL 2 through the normal Windows driver ([NVIDIA's guide](https://docs.nvidia.com/cuda/wsl-user-guide/index.html); don't install a Linux GPU driver inside WSL).
+- **Ollama, the other way: the Windows app, with everything else in WSL.** It runs on the GPU natively, without going through WSL. WSL can only reach it at `127.0.0.1` with [mirrored networking](https://learn.microsoft.com/en-us/windows/wsl/networking#mirrored-mode-networking) (`networkingMode=mirrored` under `[wsl2]` in `%UserProfile%\.wslconfig`, Windows 11 22H2 or later). On the default NAT networking, WSL has to use the Windows host's IP address instead, and Ollama has to listen beyond `127.0.0.1` (`OLLAMA_HOST=0.0.0.0`), which opens it to your network. Either way, set `[embed] url` in the config to wherever Ollama answers.
+
+### Windows (native, no WSL)
+
+Run `.\install.ps1` in PowerShell. Everything runs as Windows programs: agent-memory under Windows Python (uv installs it), SurrealDB in Docker Desktop, Ollama as the Windows app on port 11434, and the sync daemon as a Task Scheduler task that starts at logon. Claude Code runs hooks in Git Bash when it is installed and in PowerShell otherwise; the installer pins this hook to PowerShell so it behaves the same either way.
+
+### What has been tested
+
+| | Tested | Not yet tested |
+|---|---|---|
+| Linux, WSL2 | Test suite, installer, and the hook in a real Claude Code session | The systemd service the installer writes |
+| Windows (native) | Test suite, installer and the hook with Windows Python | The Task Scheduler task; Claude Code for Windows running the hook |
+| macOS | Nothing yet | No service either: run `agent-memory daemon` yourself |
+
 ## How it works
 
 1. **You and your agent write markdown.** One `NOW.md` per project (current state, six sections), one shared `LOG.md` (one line per session), Claude Code's memory files, your `CLAUDE.md`. These files are the memory, and they stay readable and editable by hand.
@@ -105,16 +133,6 @@ The templates are the product as much as the code: [templates/NOW.md](templates/
 - **Every LOG line ends with `s:<first 8 characters of the session id>`.** It ties the line to the transcript that wrote it.
 - **`(review by YYYY-MM-DD)`** on an open thread, or `review_by:` in a memory's frontmatter, makes it come back by itself.
 - **`supersedes:` and `contradicts:`** in a memory's frontmatter link it to the memory it replaces or conflicts with.
-
-## Platforms
-
-| | Status |
-|---|---|
-| Linux, WSL2 | Tested: test suite, installer, and the hook in a real Claude Code session. Not yet run: the systemd user service the installer writes |
-| Windows (native) | Tested: test suite, installer and hook with Windows Python. Not yet tested: the Task Scheduler sync task, and Claude Code on Windows running the hook |
-| macOS | Not tested. No service yet: run `agent-memory daemon` yourself |
-
-On Windows, Claude Code runs hooks in Git Bash, or in PowerShell when Git Bash is missing. The installer pins the hook to PowerShell so it behaves the same either way.
 
 ## SurrealDB version
 
