@@ -15,7 +15,7 @@ from surrealdb import RecordID
 from .config import Config
 from .parse import Block, split_blocks, sections
 from .projects import canonical
-from .sources import Source, enumerate_sources
+from .sources import Source, enumerate_sources, project_root
 
 # - 2026-10-18 · Claude Code · my-app · what happened · s:1a2b3c4d
 LOG_LINE = re.compile(r"^- (\d{4}-\d{2}-\d{2}) · ([^·]+?) · ([^·]+?) · (.*?)(?: · (s:[A-Za-z0-9_-]+))?[ \t]*$")
@@ -164,9 +164,14 @@ class Importer:
         """Give each source the key it already has in the database, then match moves.
 
         A source new to the database whose bytes equal exactly one source that vanished in this pass IS
-        that source, moved: it takes over its locator and project, so its ids, vectors and edges carry
-        on. Ambiguous matches (two files with the same bytes) and moved-and-edited files fall back to
-        delete + new, history kept. Returns the resolved sources and the sources that are really gone."""
+        that source, moved: it takes over its locator, so its ids, vectors and edges carry on. Which
+        project it keeps depends on the folder it left (see sources.project_root):
+          - that folder is gone (a project folder was renamed), or the file stayed inside it: the old
+            project, so a rename does not split one project's history in two;
+          - that folder is still there (only the file left, to another project): the new path's project.
+        The source row stores the project decided here, and later passes carry it by path, so the
+        choice sticks. Ambiguous matches (two files with the same bytes) and moved-and-edited files fall
+        back to delete + new, history kept. Returns the resolved sources and the sources really gone."""
         by_path = {v["path"]: v for v in have.values()}
         out = []
         for src in sources:
@@ -187,8 +192,13 @@ class Importer:
             olds = gone_by_sha.get(sha, [])
             if len(idx) == 1 and len(olds) == 1:
                 v = gone.pop(olds[0])
-                out[idx[0]] = replace(out[idx[0]], locator=v["locator"], project=v["project"])
-                self.log(f"moved: {v['path']} -> {out[idx[0]].path}")
+                src = out[idx[0]]
+                was, now_ = project_root(v["path"], self.cfg), project_root(src.path, self.cfg)
+                keep_old = was is None or was == now_ or not was.is_dir()  # renamed folder, or same folder
+                project = v["project"] if keep_old else src.project
+                out[idx[0]] = replace(src, locator=v["locator"], project=project)
+                note = f" (project {v['project']} -> {project})" if project != v["project"] else ""
+                self.log(f"moved: {v['path']} -> {src.path}{note}")
                 stats["moved"] += 1
         return out, gone
 
@@ -242,6 +252,7 @@ class Importer:
     def _upsert(self, source_row, entries, logs, now, stats):
         sid = source_row["id"]
         source_row = {**source_row, "projects": canonical(source_row["project"], self.cfg)}
+        before = (self.q("SELECT VALUE projects FROM $id", {"id": sid}) or [None])[0]
         self.q("UPSERT $id CONTENT $row", {"id": sid, "row": source_row})
         keep = [e["id"] for e in entries] + [l["id"] for l in logs]
         r1 = self.q("UPDATE entry SET status = 'superseded', valid_to = $now WHERE source = $sid AND status = 'active' "
@@ -271,6 +282,16 @@ class Importer:
             self.q("UPSERT $pid MERGE $row", {"pid": pid, "row": row})
         ab = [{"id": RecordID("about", "a" + _h(str(e["id"]), str(pid))), "in": e["id"], "out": pid}
               for e in entries for pid in pids]
+        stale = [RecordID("project", n) for n in (before or []) if n not in source_row["projects"]]
+        if stale and entries:
+            # The file was re-filed under another project (moved between projects): its entries keep their
+            # ids, so their old about edges would linger. Superseded entries keep theirs, as history.
+            # Select the edge ids, then delete those: on SurrealDB 3.3.4 a `DELETE about WHERE in INSIDE ...`
+            # removed nothing (with `out NOTINSIDE`) while the same SELECT found the edges.
+            gone = self.q("SELECT VALUE id FROM about WHERE in INSIDE $ids AND out INSIDE $stale",
+                          {"ids": [e["id"] for e in entries], "stale": stale}) or []
+            if gone:
+                self.q("DELETE $gone", {"gone": gone})
         for i in range(0, len(ab), BATCH):
             self.q("INSERT RELATION IGNORE INTO about $rows", {"rows": ab[i:i + BATCH]})
         if logs:

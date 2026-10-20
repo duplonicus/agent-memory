@@ -47,7 +47,7 @@ flowchart LR
 5. Graph edges are written: every block `about` its project, every LOG line `about` its project(s) and `written_in` its session. A memory's `supersedes:` and `contradicts:` frontmatter link it to the memories it names.
 6. Ollama embeds the new blocks; vectors for superseded blocks are dropped.
 
-A file that moves keeps everything: if a new file's bytes match exactly one file that vanished in the same pass, it's treated as that file. And a pass that would retire more than 10 files at once (or a fifth of them) is refused, so an unmounted drive can't empty the database.
+A file that moves keeps its ids and vectors: if a new file's bytes match exactly one file that vanished in the same pass, it's treated as that file. Which project it's filed under depends on the folder it left. If that project folder is gone (the folder was renamed), it keeps its old project, so a rename doesn't split one project's history in two. If the old folder is still there (the file alone moved to another project), it's re-filed under the new project and its project edges move with it. And a pass that would retire more than 10 files at once (or a fifth of them) is refused, so an unmounted drive can't empty the database.
 
 ## A search
 

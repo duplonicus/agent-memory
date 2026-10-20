@@ -5,7 +5,13 @@ from agent_memory.config import Config
 from agent_memory.importer import AGAINST, now_kind
 from agent_memory.parse import split_blocks
 from agent_memory.projects import canonical
-from agent_memory.sources import archived, encode, enumerate_sources, memory_project
+from agent_memory.sources import (
+    archived,
+    encode,
+    enumerate_sources,
+    memory_project,
+    project_root,
+)
 
 
 def test_encode_matches_claude_code_folder_names():
@@ -79,3 +85,16 @@ def test_now_kinds():
             "## Open threads (waiting on whom)\n- o\n\n## Gotchas\n- g\n\n## Misc\n- m\n")
     kinds = [now_kind(b) for b in split_blocks(text) if b.block == "item"]
     assert kinds == ["state", "where", "next", "decision", "decided_against", "open_thread", "gotcha", "note"]
+
+
+def test_project_root_is_the_folder_that_decides_the_project():
+    """A moved file keeps its old project only when this folder is gone (a renamed project folder)."""
+    cfg = Config(claude_dir=Path("/home/sam/.claude"), notes_dir=Path("/home/sam/dev/notes"),
+                 project_dirs=[Path("/home/sam/dev")])
+    assert project_root("/home/sam/dev/tidepool/state/a/b.md", cfg) == Path("/home/sam/dev/tidepool")
+    assert project_root("/home/sam/dev/tidepool/NOW.md", cfg) == Path("/home/sam/dev/tidepool")
+    assert project_root("/home/sam/dev/notes/ideas.md", cfg) == Path("/home/sam/dev/notes")
+    assert project_root("/home/sam/.claude/projects/-home-sam-dev-x/memory/m.md", cfg) == \
+        Path("/home/sam/.claude/projects/-home-sam-dev-x")
+    assert project_root("/home/sam/.claude/rules/r.md", cfg) == Path("/home/sam/.claude")
+    assert project_root("/elsewhere/NOW.md", cfg) is None

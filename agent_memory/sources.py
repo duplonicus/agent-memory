@@ -65,6 +65,21 @@ def archived(rel: str) -> bool:
     return any(p == "archive" for p in parts[:-1]) or bool(ARCHIVE_COPY.search(parts[-1]))
 
 
+def project_root(path: str, cfg: Config) -> Path | None:
+    """The folder that decides a file's project: <project_dir>/<name>, a Claude Code memory folder
+    (<claude_dir>/projects/<encoded cwd>), the notes folder, or the Claude folder for rules. The most
+    specific one wins (a notes folder inside a project dir is the notes folder). None when no configured
+    folder holds the path."""
+    p = Path(path)
+    found: list[Path] = []
+    projects = cfg.claude_dir / "projects"
+    for base in [projects, *cfg.project_dirs]:
+        if p.is_relative_to(base) and len(p.relative_to(base).parts) > 1:
+            found.append(base / p.relative_to(base).parts[0])
+    found += [d for d in (cfg.notes_dir, cfg.claude_dir) if p.is_relative_to(d)]
+    return max(found, key=lambda d: len(d.parts), default=None)
+
+
 def _generated(path: Path) -> bool:
     """A report written FROM the database is not imported back, or the database would describe itself."""
     try:

@@ -204,3 +204,60 @@ def test_a_reimport_restores_review_by_on_existing_entries(db):
     conn.query("UPDATE entry SET review_by = NONE WHERE review_by != NONE")
     imp.sync(force=True)
     assert "2026-03-20" in conn.query("SELECT VALUE review_by FROM entry WHERE review_by != NONE")
+
+
+def _ids(conn, path):
+    return set(map(str, conn.query("SELECT VALUE id FROM entry WHERE source = $s AND status = 'active'",
+                                   {"s": source_id(conn.query("SELECT VALUE locator FROM ONLY source WHERE path = $p "
+                                                              "LIMIT 1", {"p": str(path)}))})))
+
+
+def _edges(conn):
+    return {(str(r["in"]), r["out"].id) for r in conn.query("SELECT in, out FROM about")}
+
+
+def test_a_file_moved_to_another_project_is_filed_under_the_new_one(db):
+    """tidepool's folder is still there, only the file left: the file now belongs to garden-sensors. Its ids
+    (and so its vectors) carry over, and it stays re-filed on later passes, not just the one that saw the move."""
+    cfg, conn, imp = db
+    imp.sync()
+    root = cfg.project_dirs[0]
+    old, new = root / "tidepool" / "state" / "harmonics.md", root / "garden-sensors" / "state" / "harmonics.md"
+    ids = _ids(conn, old)
+    text = conn.query("SELECT VALUE text FROM entry WHERE path = $p AND status = 'active' AND kind = 'doc_section' "
+                      "LIMIT 1", {"p": str(old)})[0]
+    edges = _edges(conn)
+    new.parent.mkdir()
+    shutil.move(old, new)
+    stats = imp.sync()
+    assert stats["moved"] == 1 and stats["deleted"] == 0
+    for _ in range(2):  # the pass that sees the move, then an unchanged pass
+        assert _ids(conn, new) == ids
+        # Exactly this file's edges moved from tidepool to garden-sensors; nothing else was touched.
+        assert _edges(conn) == (edges - {(i, "tidepool") for i in ids}) | {(i, "garden-sensors") for i in ids}
+        assert conn.query("SELECT VALUE project FROM source WHERE path = $p", {"p": str(new)}) == ["garden-sensors"]
+        assert text in conn.query("RETURN fn::entries('garden-sensors')")
+        assert text not in conn.query("RETURN fn::entries('tidepool')")
+        assert set(conn.query("SELECT VALUE project FROM entry WHERE path = $p AND status = 'active'",
+                              {"p": str(new)})) == {"garden-sensors"}
+        imp.sync()
+
+
+def test_a_renamed_project_folder_keeps_its_project(db):
+    """The whole tidepool folder became tide-pool: the old folder is gone, so this is a rename, and every file
+    keeps its project, ids and edges."""
+    cfg, conn, imp = db
+    imp.sync()
+    root = cfg.project_dirs[0]
+    ids = _ids(conn, root / "tidepool" / "state" / "harmonics.md")
+    before = conn.query("RETURN fn::entries('tidepool')")
+    edges = _edges(conn)
+    shutil.move(root / "tidepool", root / "tide-pool")
+    stats = imp.sync()
+    assert stats["moved"] == 3 and stats["deleted"] == 0
+    for _ in range(2):
+        assert _edges(conn) == edges
+        assert _ids(conn, root / "tide-pool" / "state" / "harmonics.md") == ids
+        assert conn.query("RETURN fn::entries('tidepool')") == before
+        assert conn.query("RETURN fn::entries('tide-pool')") == []
+        imp.sync()
