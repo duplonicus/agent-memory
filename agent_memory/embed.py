@@ -42,8 +42,11 @@ def sync_embeddings(conn, embedder: Embedder, model: str, log=print) -> dict:
     # Archived files stay readable but get no vector: they would compete with the live file in search.
     want = set(conn.query("SELECT VALUE record::id(id) FROM entry WHERE status = 'active' AND text != '' "
                           "AND source.archived != true"))
-    have = set(conn.query("SELECT VALUE record::id(id) FROM emb"))
-    stale = sorted(have - want)
+    # A vector from another model is stale too: two models' spaces are not comparable, and the query is
+    # embedded with the current one.
+    have_all = set(conn.query("SELECT VALUE record::id(id) FROM emb"))
+    have = set(conn.query("SELECT VALUE record::id(id) FROM emb WHERE model = $model", {"model": model}))
+    stale = sorted(have_all - (want & have))
     if stale:
         conn.query("DELETE $ids", {"ids": [RecordID("emb", k) for k in stale]})
     missing = sorted(want - have)

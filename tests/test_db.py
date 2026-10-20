@@ -157,3 +157,16 @@ def test_a_file_that_is_not_utf8_is_skipped_not_fatal(db):
     # once it is fixed it comes in like any new file
     bad.write_text("# Rule\n\n- café rule\n", encoding="utf-8")
     assert imp.sync()["files"] == 1
+
+
+def test_a_new_embedding_model_replaces_the_old_vectors(db):
+    """Two models' vectors are not comparable, so switching [embed] model must re-embed, not mix spaces."""
+    from agent_memory.embed import DIM, sync_embeddings
+    cfg, conn, imp = db
+    imp.sync()
+    first = sync_embeddings(conn, lambda texts: [[0.1] * DIM for _ in texts], "model-a", log=lambda *a: None)
+    assert first["embedded"] == first["total"] > 0
+    second = sync_embeddings(conn, lambda texts: [[0.2] * DIM for _ in texts], "model-b", log=lambda *a: None)
+    assert second["embedded"] == first["total"]
+    assert set(conn.query("SELECT VALUE model FROM emb")) == {"model-b"}
+    assert sync_embeddings(conn, lambda texts: [], "model-b", log=lambda *a: None)["embedded"] == 0

@@ -62,7 +62,8 @@ DEFINE ANALYZER OVERWRITE en TOKENIZERS blank, class, punct FILTERS lowercase, a
 DEFINE INDEX OVERWRITE entry_text ON entry FIELDS text FULLTEXT ANALYZER en BM25 HIGHLIGHTS;
 
 -- One vector per active entry, under the entry's own key (entry ids are content-addressed, so a key
--- that exists is current). 768 = embeddinggemma; another model needs this DIMENSION changed.
+-- that exists is current, unless `model` differs from the config's: then it is re-embedded).
+-- 768 = embeddinggemma; a model with another size needs this DIMENSION changed.
 DEFINE TABLE OVERWRITE emb SCHEMAFULL;
 DEFINE FIELD OVERWRITE v     ON emb TYPE array<float>;
 DEFINE FIELD OVERWRITE model ON emb TYPE string;
