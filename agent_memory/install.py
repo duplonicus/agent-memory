@@ -240,20 +240,17 @@ class Installer:
             if str(link.parent) not in os.environ.get("PATH", "").split(os.pathsep):
                 self.todo.append(f"Add {link.parent} to your PATH.")
 
-    # 6. The sync service
-    def service(self, cfg: Config) -> None:
-        exe = Path(sys.executable)
-        system = platform.system()
-        if system == "Linux" and shutil.which("systemctl"):
-            unit_dir = Path.home() / ".config" / "systemd" / "user"
-            unit = unit_dir / UNIT
-            if unit.exists():
-                print(f"{unit} exists")
-                return
-            if not self.ask(f"Install and start the sync service ({unit}, systemd user unit)?"):
-                return
-            unit_dir.mkdir(parents=True, exist_ok=True)
-            unit.write_text(encoding="utf-8", data=f"""[Unit]
+    @staticmethod
+    def _systemctl(*args: str) -> bool:
+        try:
+            return subprocess.run(["systemctl", "--user", *args], capture_output=True, text=True).returncode == 0
+        except OSError:
+            return False
+
+    @staticmethod
+    def _write_unit(unit: Path, exe: Path) -> None:
+        unit.parent.mkdir(parents=True, exist_ok=True)
+        unit.write_text(encoding="utf-8", data=f"""[Unit]
 Description=agent-memory: copies your memory files into SurrealDB, one way
 After=network.target
 
@@ -266,8 +263,36 @@ RestartSec=10
 [Install]
 WantedBy=default.target
 """)
-            subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
-            subprocess.run(["systemctl", "--user", "enable", "--now", UNIT], check=True)
+
+    # 6. The sync service
+    def service(self, cfg: Config) -> None:
+        exe = Path(sys.executable)
+        system = platform.system()
+        if system == "Linux" and shutil.which("systemctl"):
+            unit_dir = Path.home() / ".config" / "systemd" / "user"
+            unit = unit_dir / UNIT
+            # Check the service, not the file: a first run can write the unit and then fail to enable it (WSL
+            # without systemd), and a rerun must still enable it.
+            if unit.exists():
+                if self._systemctl("is-enabled", UNIT) and self._systemctl("is-active", UNIT):
+                    print(f"{UNIT} is enabled and running")
+                    return
+                if not self.ask(f"{unit} exists but the service is not running. Enable and start it?"):
+                    return
+            elif not self.ask(f"Install and start the sync service ({unit}, systemd user unit)?"):
+                return
+            else:
+                self._write_unit(unit, exe)
+            try:
+                for args in (["daemon-reload"], ["enable", "--now", UNIT]):
+                    subprocess.run(["systemctl", "--user", *args], check=True, capture_output=True, text=True)
+            except (OSError, subprocess.CalledProcessError) as e:
+                why = (getattr(e, "stderr", "") or str(e)).strip().splitlines()
+                self.todo.append(f"Start the sync service: `systemctl --user enable --now {UNIT}` failed "
+                                 f"({why[0] if why else type(e).__name__}). On WSL, turn systemd on ([boot] "
+                                 f"systemd=true in /etc/wsl.conf, then `wsl --shutdown`), then rerun "
+                                 f"`agent-memory install`.")
+                return
             self.done.append(f"started {UNIT} (journalctl --user -u {UNIT})")
         elif system == "Windows":
             pyw = exe.with_name("pythonw.exe")
@@ -299,8 +324,7 @@ WantedBy=default.target
             self.claude(cfg)
         if db_ok and "--no-service" not in self.args:
             self.service(cfg)
-        STATE_DIR.mkdir(parents=True, exist_ok=True)
-        (STATE_DIR / "installed").touch(exist_ok=True)
+        mark_installed()
         if db_ok:
             from .db import connect
             from .importer import Importer
@@ -314,6 +338,15 @@ WantedBy=default.target
             for t in self.todo:
                 print(f"  - {t}")
         print("\nTry it: `agent-memory demo`, then start Claude Code in a project folder (cd ~/dev/<project> && claude).")
+
+
+def mark_installed(state_dir: Path = STATE_DIR) -> None:
+    """The audit counts unlogged sessions from the first install on (audit.INSTALLED's mtime), so a rerun
+    leaves the marker as it is."""
+    state_dir.mkdir(parents=True, exist_ok=True)
+    marker = state_dir / "installed"
+    if not marker.exists():
+        marker.touch()
 
 
 def main(args: list[str]) -> None:
