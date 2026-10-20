@@ -161,12 +161,23 @@ def test_a_file_that_is_not_utf8_is_skipped_not_fatal(db):
 
 def test_a_new_embedding_model_replaces_the_old_vectors(db):
     """Two models' vectors are not comparable, so switching [embed] model must re-embed, not mix spaces."""
+    import random
+    import time
+
     from agent_memory.embed import DIM, sync_embeddings
     cfg, conn, imp = db
     imp.sync()
-    first = sync_embeddings(conn, lambda texts: [[0.1] * DIM for _ in texts], "model-a", log=lambda *a: None)
+    rng = random.Random(7)
+
+    def fake(texts):
+        return [[rng.random() for _ in range(DIM)] for _ in texts]
+
+    first = sync_embeddings(conn, fake, "model-a", log=lambda *a: None)
     assert first["embedded"] == first["total"] > 0
-    second = sync_embeddings(conn, lambda texts: [[0.2] * DIM for _ in texts], "model-b", log=lambda *a: None)
+    # Deleting vectors in the same second they were inserted hit a retryable write conflict on 3.3.4 about half
+    # the time (likely the HNSW index still taking them in). A real model switch comes long after the inserts.
+    time.sleep(1)
+    second = sync_embeddings(conn, fake, "model-b", log=lambda *a: None)
     assert second["embedded"] == first["total"]
     assert set(conn.query("SELECT VALUE model FROM emb")) == {"model-b"}
     assert sync_embeddings(conn, lambda texts: [], "model-b", log=lambda *a: None)["embedded"] == 0
