@@ -5,7 +5,7 @@ Prints, warnings first: this session's id and LOG tag, the global and project NO
 sessions that did work without logging it. Files only: it works with the database down.
 
 The project is the git root of the folder Claude was started in (else the folder itself), so start the
-agent in the project's folder. A `cd` inside a running session changes nothing here.
+agent in the project's folder. In a git worktree, which has no NOW.md of its own, the main checkout's is used. A `cd` inside a running session changes nothing here.
 """
 from __future__ import annotations
 
@@ -44,6 +44,12 @@ def session_start(cfg: Config, data: dict) -> str:
     root, is_repo = project_root(cwd)
     gnow = cfg.global_now
     pnow = (root / "NOW.md").resolve()
+    if is_repo and not pnow.is_file():
+        # A worktree has no NOW.md (it is untracked, in .git/info/exclude); the main checkout's is the
+        # project's. --git-common-dir is the main .git, so its parent is the main checkout.
+        common = _git(root, "rev-parse", "--path-format=absolute", "--git-common-dir")
+        if common and (Path(common).parent / "NOW.md").is_file():
+            pnow = (Path(common).parent / "NOW.md").resolve()
     out: list[str] = []
     warn: list[str] = []
     if sid:

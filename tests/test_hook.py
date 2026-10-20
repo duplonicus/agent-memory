@@ -55,3 +55,17 @@ def test_oversize_now_warns_and_stays_under_the_harness_cap(demo):
     out = session_start(demo, {"cwd": str(now.parent)})
     assert "!!! OVERSIZE" in out and "clipped brief" in out
     assert len(out) < 10000
+
+
+def test_a_worktree_gets_the_main_checkouts_now(demo, tmp_path):
+    """NOW.md is untracked (.git/info/exclude), so a worktree has none; the brief reads the main checkout's."""
+    proj = demo.project_dirs[0] / "tidepool"
+    _git(proj, "init", "-q")
+    (proj / "x.txt").write_text("x", encoding="utf-8")
+    _git(proj, "add", "x.txt")
+    _git(proj, "commit", "-q", "--no-gpg-sign", "-m", "x")
+    wt = tmp_path / "wt"
+    _git(proj, "worktree", "add", "-q", str(wt), "-b", "feat/x")
+    out = session_start(demo, {"cwd": str(wt)})
+    assert f"=== {proj / 'NOW.md'}" in out
+    assert "No NOW.md for this repo" not in out

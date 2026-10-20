@@ -19,7 +19,7 @@ Every hook runs as `python -m agent_memory hook <name>` with Claude Code's event
 Before your first prompt, the agent sees:
 
 1. This session's id and its LOG tag (`s:` plus the first 8 characters), which it puts on its LOG lines.
-2. The cross-project `NOW.md` and the project's `NOW.md`, clipped to 6 KB together. Every section stays; long items are cut to their first line and marked `[+N chars]`, and capped sections end with `[+N more items in <file>]`. Open threads whose `(review by YYYY-MM-DD)` has passed move to the top, marked `OVERDUE`.
+2. The cross-project `NOW.md` and the project's `NOW.md` (in a git worktree, the main checkout's), clipped to 6 KB together. Every section stays; long items are cut to their first line and marked `[+N chars]`, and capped sections end with `[+N more items in <file>]`. Open threads whose `(review by YYYY-MM-DD)` has passed move to the top, marked `OVERDUE`.
 3. Warnings first: `!!! STALE` when the repo has commits newer than its NOW.md, `!!! OVERSIZE` when a NOW.md is over its size cap, and a note when the brief was clipped.
 4. The last 5 LOG lines.
 5. Sessions from the last 7 days that made 3 or more edits or commits and have no LOG line (only sessions since you installed agent-memory count).
