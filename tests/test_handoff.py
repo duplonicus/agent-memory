@@ -231,3 +231,30 @@ def test_the_audit_ignores_the_compaction_line(env, monkeypatch, tmp_path):
     with env.cfg.log_file.open("a", encoding="utf-8") as f:
         f.write(f"- 2026-03-02 · Claude Code · repo · did things · {TAG}\n")
     assert audit.unlogged(env.cfg) == []
+
+
+@pytest.mark.parametrize("command", [
+    "cat NOW.md 2>/dev/null",
+    "head -20 /repo/NOW.md 2>&1",
+    "tail -5 /notes/LOG.md >&2",
+    "cat /repo/NOW.md > /tmp/copy.md",
+    "wc -l NOW.md 2>>/tmp/err.log",
+])
+def test_a_read_with_a_redirect_is_still_a_read(command):
+    assert handoff.classify("Bash", {"command": command}) is None
+
+
+def test_a_commit_that_names_now_md_is_a_commit():
+    assert handoff.classify("Bash", {"command": 'git commit -m "update NOW.md" 2>&1'}) == "commit"
+
+
+@pytest.mark.parametrize("command", [
+    'echo "- line" >> /notes/LOG.md',
+    "echo x > NOW.md",
+    'printf "%s\\n" "$l" >>"$NOTES/LOG.md"',
+    "cat new.md >NOW.md 2>/dev/null",
+    "echo x | tee -a /notes/LOG.md",
+    "sed -i 's/a/b/' NOW.md",
+])
+def test_writes_to_the_state_files_still_count(command):
+    assert handoff.classify("Bash", {"command": command}) == "state"

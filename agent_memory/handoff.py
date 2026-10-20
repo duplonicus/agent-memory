@@ -20,7 +20,10 @@ from .config import Config
 MIN_WORK = 3  # edits + commits before a session with no LOG line is sent back
 
 STATE_FILE = re.compile(r"(?:^|[/\\\s\"'])(NOW|LOG)\.md\b")
-SHELL_WRITE = re.compile(r">>|>\s*\S|\btee\b|sed\s+-i|\.write\(|write_text\(|Add-Content|Out-File|Set-Content")
+# A redirect only writes the state file when the file is its target: `cat NOW.md 2>/dev/null` and
+# `head NOW.md 2>&1` are reads. 2> (stderr) and >& (a descriptor) never are.
+REDIRECT_TO_STATE = re.compile(r"""(?<!\d)>>?(?!&)\s*["']?(?:[^\s;|&<>"']*[/\\])?(?:NOW|LOG)\.md\b""")
+SHELL_WRITE = re.compile(r"\btee\b|sed\s+-i|\.write\(|write_text\(|Add-Content|Out-File|Set-Content")
 COMMIT = re.compile(r"\bgit\b[^\n|;&]*\bcommit\b")
 DECISION = re.compile(
     r"\b(?:leave (?:it|that|this|them|those)|as[- ]is|(?:is|that'?s|it'?s|are) final|final(?:ly)? decision|decided|"
@@ -73,7 +76,7 @@ def classify(name: str, tool_input: dict) -> str | None:
         return "state" if STATE_FILE.search(str(tool_input.get("file_path", ""))) else "edit"
     if name in ("Bash", "PowerShell"):
         command = str(tool_input.get("command", ""))
-        if STATE_FILE.search(command) and SHELL_WRITE.search(command):
+        if REDIRECT_TO_STATE.search(command) or (STATE_FILE.search(command) and SHELL_WRITE.search(command)):
             return "state"  # one command can commit and then log; the log is what the gate cares about
         if COMMIT.search(command):
             return "commit"

@@ -39,7 +39,7 @@ At the end of each turn it reads the session's transcript and sends the session 
 
 The message tells the agent to update NOW.md (State, Next, Decisions, Open threads, unverified claims) and append one tagged LOG line, then reply with one line. If nothing changed, it can say so in one line and stop.
 
-It never fires twice in a row (Claude Code's `stop_hook_active` flag). It ignores subagents' work, reading NOW.md or LOG.md without writing them, and any tool call that failed or was refused: a commit blocked by permissions changed nothing, so it doesn't count.
+It never fires twice in a row (Claude Code's `stop_hook_active` flag). It ignores subagents' work, reading NOW.md or LOG.md without writing them (a redirect counts as a write only when NOW.md or LOG.md is its target, so `cat NOW.md 2>/dev/null` is still a read), and any tool call that failed or was refused: a commit blocked by permissions changed nothing, so it doesn't count.
 
 ## prompt: catch decisions as they happen
 
