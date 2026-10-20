@@ -201,3 +201,33 @@ def test_compaction_never_glues_onto_a_line_without_a_newline(env):
 def test_a_broken_hook_fails_open(env):
     out = env.run("stop", {"session_id": SID, "transcript_path": 12345})
     assert out.returncode == 0 and out.stdout == ""
+
+
+def test_the_compaction_line_does_not_count_as_logging(env):
+    """pre-compact tags its line with the session's own tag; that line is the hook's, not the session's
+    record, so a long session that compacted is still sent back for its own LOG line."""
+    handoff.pre_compact(env.cfg, {"session_id": SID, "cwd": "/repo", "trigger": "auto", "transcript_path": "/t/x.jsonl"})
+    assert TAG in env.cfg.log_file.read_text(encoding="utf-8")
+    assert not handoff.logged(env.cfg, SID)
+    r = reason(env, EDIT, EDIT, EDIT)
+    assert r and "LOG.md has no line tagged" in r
+    with env.cfg.log_file.open("a", encoding="utf-8") as f:
+        f.write(f"- 2026-03-02 · Claude Code · repo · did things · {TAG}\n")
+    assert handoff.logged(env.cfg, SID)
+
+
+def test_the_audit_ignores_the_compaction_line(env, monkeypatch, tmp_path):
+    from agent_memory import audit
+    folder = env.cfg.claude_dir / "projects" / "-repo"
+    folder.mkdir(parents=True)
+    (folder / f"{SID}.jsonl").write_text("\n".join(json.dumps(EDIT, separators=(",", ":")) for _ in range(3)) + "\n",
+                                         encoding="utf-8")
+    marker = tmp_path / "installed"
+    marker.touch()
+    os.utime(marker, (1, 1))
+    monkeypatch.setattr(audit, "INSTALLED", marker)
+    handoff.pre_compact(env.cfg, {"session_id": SID, "cwd": "/repo", "trigger": "auto"})
+    assert [t for _, t, _, _ in audit.unlogged(env.cfg)] == [TAG]
+    with env.cfg.log_file.open("a", encoding="utf-8") as f:
+        f.write(f"- 2026-03-02 · Claude Code · repo · did things · {TAG}\n")
+    assert audit.unlogged(env.cfg) == []

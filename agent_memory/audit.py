@@ -13,6 +13,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .config import STATE_DIR, Config
+from .handoff import session_lines
 
 WORK = re.compile(r'"name":\s*"(Edit|Write|NotebookEdit)"|git commit|git push')
 INSTALLED = STATE_DIR / "installed"
@@ -21,7 +22,8 @@ INSTALLED = STATE_DIR / "installed"
 def unlogged(cfg: Config, days: int = 7, skip: str = "", min_actions: int = 3) -> list[tuple[str, str, str, int]]:
     """(last active, s:id8, project folder, edit/commit count) for each unlogged session, oldest first."""
     log = cfg.log_file
-    logged = set(re.findall(r"s:([0-9a-f]{8})", log.read_text(encoding="utf-8", errors="replace"))) if log.exists() else set()
+    text = log.read_text(encoding="utf-8", errors="replace") if log.exists() else ""
+    logged = set(re.findall(r"s:([0-9a-f]{8})", "\n".join(session_lines(text))))
     began = INSTALLED.stat().st_mtime if INSTALLED.exists() else time.time()
     cutoff = max(time.time() - days * 86400, began)
     out = []

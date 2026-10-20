@@ -61,6 +61,8 @@ When Claude Code compacts the context, the session carries on from a summary. If
 - 2026-03-14 · Claude Code (hook) · tidepool · context compacted (auto); anything not in NOW.md before this point is only in the transcript /home/you/.claude/projects/.../<id>.jsonl · s:1a2b3c4d
 ```
 
+The line carries the session's tag, but it is the hook's line, not the session's: the stop hook and the unlogged-sessions list skip `Claude Code (hook)` lines, so a session that compacted still owes its own LOG line.
+
 ## Turning one off
 
 Delete its entry in `~/.claude/settings.json`. The installer adds only the entries that are missing, so a later `agent-memory install` would add it back: answer "n" to the hooks question.

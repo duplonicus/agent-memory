@@ -96,11 +96,21 @@ def work_summary(transcript_path: str) -> dict:
     return {"total": total, "since": since, "wrote_state": wrote_state}
 
 
+HOOK_SURFACE = "Claude Code (hook)"  # pre_compact's lines: the hook's record, not the session's
+
+
+def session_lines(text: str) -> list[str]:
+    """LOG lines a session wrote itself. pre_compact's line carries the session's tag too, and counting it
+    would switch off the Stop gate and the audit for exactly the long sessions that compact."""
+    return [line for line in text.splitlines() if f"· {HOOK_SURFACE} ·" not in line]
+
+
 def logged(cfg: Config, session_id: str) -> bool:
     try:
-        return tag(session_id) in cfg.log_file.read_text(encoding="utf-8", errors="replace")
+        text = cfg.log_file.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return False
+    return any(tag(session_id) in line for line in session_lines(text))
 
 
 def stop(cfg: Config, event: dict) -> dict | None:
@@ -172,7 +182,7 @@ def pre_compact(cfg: Config, event: dict) -> None:
     if not sid or not log.exists():
         return None
     project = Path(event.get("cwd") or "").name or "?"
-    line = (f"- {datetime.now():%Y-%m-%d} · Claude Code (hook) · {project} · context compacted "
+    line = (f"- {datetime.now():%Y-%m-%d} · {HOOK_SURFACE} · {project} · context compacted "
             f"({event.get('trigger', '?')}); anything not in NOW.md before this point is only in the transcript "
             f"{event.get('transcript_path', '?')} · {tag(sid)}\n")
     with log.open("a+", encoding="utf-8") as f:
