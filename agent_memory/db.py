@@ -3,6 +3,7 @@ the .env beside the config; root is for the schema and backups only. Nothing her
 from __future__ import annotations
 
 import json
+import urllib.parse
 import urllib.request
 from base64 import b64encode
 from pathlib import Path
@@ -22,8 +23,9 @@ def connect(cfg: Config) -> Surreal:
     return conn
 
 
-def sql(cfg: Config, query: str, root: bool = False, db: str | None = None) -> list[dict]:
-    """POST SurrealQL to /sql and return the per-statement results (status, result)."""
+def sql(cfg: Config, query: str, root: bool = False, db: str | None = None, vars: dict | None = None) -> list[dict]:
+    """POST SurrealQL to /sql and return the per-statement results (status, result). `vars` become $variables
+    (sent as URL parameters, which SurrealDB binds as query variables)."""
     env = cfg.env()
     keys = ("AGENT_MEMORY_ROOT_USER", "AGENT_MEMORY_ROOT_PASS") if root else ("AGENT_MEMORY_USER", "AGENT_MEMORY_PASS")
     missing = [k for k in keys if not env.get(k)]
@@ -34,7 +36,8 @@ def sql(cfg: Config, query: str, root: bool = False, db: str | None = None) -> l
                "Authorization": "Basic " + b64encode(f"{user}:{pw}".encode()).decode()}
     if not root:
         headers["surreal-auth-ns"] = cfg.ns
-    req = urllib.request.Request(f"{cfg.surreal_url}/sql", data=query.encode(), headers=headers)
+    url = f"{cfg.surreal_url}/sql" + ("?" + urllib.parse.urlencode(vars) if vars else "")
+    req = urllib.request.Request(url, data=query.encode(), headers=headers)
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.loads(r.read())
 

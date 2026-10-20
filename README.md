@@ -71,7 +71,7 @@ tidepool · frontmatter · name: no-noaa-at-view-time description: tide charts m
 
 The search line fuses keyword (BM25) and vector hits in one SurrealDB query. The old memory that `no-noaa-at-view-time` **supersedes** is left out of the results; archived files are too.
 
-Also there: `fn::overdue()` (past their `review by` date), `fn::stale_nows(14)` (NOW.md files nobody touched in two weeks), `fn::conflicts()` (memories marked as contradicting each other), `fn::history('<memory>')`, `fn::entries('<project>', 'decided_against')` and `fn::logs('<project>')`. SurrealDB Studio can browse all of it as a graph.
+Also there: `fn::overdue()` (past their `review by` date, as of your local date through `agent-memory query`; elsewhere, such as Studio, it is the UTC date unless you pass one: `fn::overdue('2026-11-01')`), `fn::stale_nows(14)` (NOW.md files nobody touched in two weeks), `fn::conflicts()` (memories marked as contradicting each other), `fn::history('<memory>')`, `fn::entries('<project>', 'decided_against')` and `fn::logs('<project>')`. SurrealDB Studio can browse all of it as a graph.
 
 ## Speed
 

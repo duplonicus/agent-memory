@@ -35,9 +35,11 @@ def _search(cfg: Config, args: list[str]) -> None:
 
 def _query(cfg: Config, args: list[str]) -> None:
     from .db import sql
+    from datetime import date
     q = args[0] if args else sys.stdin.read()
     status = 0
-    for r in sql(cfg, q):
+    # SurrealDB only knows UTC; fn::overdue's "today" is the caller's local date.
+    for r in sql(cfg, q, vars={"local_today": date.today().isoformat()}):
         if r.get("status") != "OK":
             print("ERROR:", r.get("result"), file=sys.stderr)
             status = 1

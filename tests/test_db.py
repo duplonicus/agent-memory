@@ -170,3 +170,16 @@ def test_a_new_embedding_model_replaces_the_old_vectors(db):
     assert second["embedded"] == first["total"]
     assert set(conn.query("SELECT VALUE model FROM emb")) == {"model-b"}
     assert sync_embeddings(conn, lambda texts: [], "model-b", log=lambda *a: None)["embedded"] == 0
+
+
+def test_overdue_defaults_to_the_callers_local_date(db):
+    """time::now() is UTC, so after 8 PM in Toronto the default "today" was already tomorrow. A caller passes
+    its local date as $local_today (agent-memory query does); an explicit date still wins."""
+    cfg, conn, imp = db
+    imp.sync()
+    [res] = sql(cfg, "RETURN fn::overdue();", vars={"local_today": "2026-03-20"})
+    assert [(r["project"], r["review_by"]) for r in res["result"]] == [("tidepool", "2026-03-20")]
+    [res] = sql(cfg, "RETURN fn::overdue('2026-03-25');", vars={"local_today": "2026-03-20"})
+    assert len(res["result"]) == 2
+    [res] = sql(cfg, "RETURN fn::overdue();")  # no local date: falls back to UTC today, which is past every demo date
+    assert len(res["result"]) >= 2

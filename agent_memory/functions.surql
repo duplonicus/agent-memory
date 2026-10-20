@@ -64,9 +64,11 @@ DEFINE FUNCTION OVERWRITE fn::unverified() {
            ORDER BY project;
 };
 
--- Items and memories whose review date has passed, oldest first. $today defaults to today (UTC).
+-- Items and memories whose review date has passed, oldest first. $today defaults to the caller's local
+-- date, $local_today, which `agent-memory query` sets (SurrealDB has no named time zones, and time::now()
+-- is UTC, a day ahead every evening west of Greenwich); without it, today in UTC.
 DEFINE FUNCTION OVERWRITE fn::overdue($today: option<string>) {
-    LET $d = $today ?? time::format(time::now(), "%Y-%m-%d");
+    LET $d = $today ?? $local_today ?? time::format(time::now(), "%Y-%m-%d");
     RETURN SELECT project, review_by, text, path FROM entry
            WHERE status = 'active' AND block IN ['item', 'frontmatter', 'section'] AND review_by != NONE
              AND review_by <= $d AND source.archived != true
