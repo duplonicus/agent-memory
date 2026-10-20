@@ -15,3 +15,18 @@ def test_hide_takes_the_folder_name_or_any_spelling():
     argv = ["map.html", "--hide", "My_Client", "--hide", "tide pool", "--hide", "old_client"]
     assert build.hidden(argv, cfg) == {"my-client", "tide-pool"}
     assert build.hidden(["map.html"], cfg) == set()
+
+
+def test_hide_still_hides_a_dropped_project_under_the_name_its_dots_carry():
+    cfg = Config(drop=["scratch"])
+    hide = build.hidden(["map.html", "--hide", "scratch"], cfg)
+    assert hide == {"scratch"}
+    dot_project = (build.canonical("scratch", cfg) or ["scratch"])[0]
+    assert dot_project in hide
+
+
+def test_hide_report_always_says_what_was_hidden():
+    assert build.hide_report({"scratch"}, {"scratch", "web"}) == ["text hidden for: scratch"]
+    lines = build.hide_report({"nope"}, {"web"})
+    assert lines[0] == "text hidden for: none"
+    assert lines[1].startswith("WARN: no notes in nope")
