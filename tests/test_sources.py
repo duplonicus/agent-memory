@@ -46,6 +46,11 @@ def test_a_folder_without_now_md_is_not_a_project(demo):
 def test_archived():
     assert archived("archive/NOW.md") and archived("NOW-archive-2026-01-01.md")
     assert not archived("backup-plan.md") and not archived("NOW.md")
+    # Only the dated-copy convention counts; a name that merely mentions archiving is a live note.
+    assert archived("NOW-archive-2026-10-15.md") and archived("notes-archive-2026-10-15-b.md")
+    assert archived("old/archive/plan.md") and archived("archive-2026-10-15.md")
+    assert not archived("archive-plan.md") and not archived("archived-ideas.md")
+    assert not archived("how-we-archive.md") and not archived("archives/plan.md")
 
 
 def test_canonical_names():

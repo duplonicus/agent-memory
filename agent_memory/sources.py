@@ -53,11 +53,16 @@ def memory_project(folder: str, cfg: Config) -> str | None:
     return folder.strip("-") or None
 
 
+# A dated copy: NOW-archive-2026-10-15.md, notes-archive-2026-10-15-b.md, archive-2026-10-15.md.
+ARCHIVE_COPY = re.compile(r"(?:^|[-_.])archive[-_]\d{4}-\d{2}-\d{2}")
+
+
 def archived(rel: str) -> bool:
-    """Old copies stay in the database but out of search: anything under an archive/ folder, and any
-    file whose name says archive (a dated copy of a NOW.md, say)."""
+    """Old copies stay in the database but out of search: anything under an archive/ folder, and a dated
+    archive copy (NOW-archive-YYYY-MM-DD.md). A name that only mentions archiving (archive-plan.md,
+    archived-ideas.md) is a live note."""
     parts = rel.lower().replace("\\", "/").split("/")
-    return any(p == "archive" for p in parts[:-1]) or "archive" in parts[-1]
+    return any(p == "archive" for p in parts[:-1]) or bool(ARCHIVE_COPY.search(parts[-1]))
 
 
 def _generated(path: Path) -> bool:
