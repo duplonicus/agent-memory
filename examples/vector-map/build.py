@@ -21,14 +21,20 @@ from agent_memory.projects import canonical
 HERE = Path(__file__).resolve().parent
 
 
+def hidden(argv: list[str], cfg) -> set[str]:
+    """The --hide projects as canonical names, the form every dot's project takes, so the folder name
+    (My_Client), the LOG spelling (my-client) and an alias all hide the same project."""
+    return {name for i, a in enumerate(argv) if i and argv[i - 1] == "--hide" for name in canonical(a, cfg)}
+
+
 def main(argv: list[str]) -> None:
     if not argv or argv[0].startswith("-"):
         sys.exit(__doc__)
     import numpy as np
     import umap
 
-    out, hide = Path(argv[0]), {a for i, a in enumerate(argv) if i and argv[i - 1] == "--hide"}
     cfg = load()
+    out, hide = Path(argv[0]), hidden(argv, cfg)
     conn = connect(cfg)
     meta = {r["k"]: r for r in conn.query("SELECT record::id(id) AS k, project, kind, text FROM entry "
                                           "WHERE status = 'active' AND source.archived != true")}
@@ -65,6 +71,12 @@ def main(argv: list[str]) -> None:
         text = " ".join((m.get("text") or "").split())
         pts.append({"p": project, "k": m["kind"], "x": round(float(Y[i, 0]), 3), "y": round(float(Y[i, 1]), 3),
                     "z": round(float(Y[i, 2]), 3), "t": "(text hidden)" if project in hide else text[:280], "n": nn[i]})
+    if hide:
+        found = {p["p"] for p in pts}
+        print(f"text hidden for: {', '.join(sorted(hide & found)) or 'none'}")
+        if hide - found:
+            print(f"WARN: no notes in {', '.join(sorted(hide - found))}; check the spelling against these projects: "
+                  f"{', '.join(sorted(found))}")
     data = json.dumps(pts, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     html = (HERE / "template.html").read_text(encoding="utf-8")
     out.write_text(html.replace("__DATA__", data).replace("__BUILT__", date.today().isoformat()), encoding="utf-8")

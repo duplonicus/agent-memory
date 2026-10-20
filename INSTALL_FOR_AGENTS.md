@@ -19,7 +19,7 @@ If the installer stops with "Still to do" items, work through those, then run it
 A 3-d map of every note, like the picture at the top of the README: one self-contained HTML page with rotate, zoom, word search, and "click a dot for its 5 nearest notes". Offer it once the sync daemon has embedded their notes (`agent-memory status` shows no embed error).
 
 1. Install the extra packages (UMAP, NumPy, SciPy, scikit-learn and Numba: about 420 MB on disk): `uv sync --extra map`.
-2. Ask which projects hold anything private. The page carries up to 280 characters of every note, so hide those: `uv run --extra map python examples/vector-map/build.py ~/memory-map.html --hide <project> --hide <project>`. A hidden project keeps its dots; its text is replaced.
+2. Ask which projects hold anything private. The page carries up to 280 characters of every note, so hide those: `uv run --extra map python examples/vector-map/build.py ~/memory-map.html --hide <project> --hide <project>`. A hidden project keeps its dots; its text is replaced. The folder name or any spelling of it works; check that the build prints each one under "text hidden for".
 3. Open the file in a browser. It loads Plotly from a CDN, so it needs a network connection the first time.
 4. If you can publish pages for them (a Claude artifact, for example), say the page is private by default and confirm before sharing it with anyone: it contains their notes.
 
