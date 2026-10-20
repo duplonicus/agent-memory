@@ -183,3 +183,13 @@ def test_overdue_defaults_to_the_callers_local_date(db):
     assert len(res["result"]) == 2
     [res] = sql(cfg, "RETURN fn::overdue();")  # no local date: falls back to UTC today, which is past every demo date
     assert len(res["result"]) >= 2
+
+
+def test_a_reimport_restores_review_by_on_existing_entries(db):
+    """The entry upsert's ON DUPLICATE KEY UPDATE list must carry review_by, or an id that already existed
+    keeps its old value even on sync(force=True)."""
+    cfg, conn, imp = db
+    imp.sync()
+    conn.query("UPDATE entry SET review_by = NONE WHERE review_by != NONE")
+    imp.sync(force=True)
+    assert "2026-03-20" in conn.query("SELECT VALUE review_by FROM entry WHERE review_by != NONE")
