@@ -105,3 +105,13 @@ def test_sections_grouping():
 def test_parse_frontmatter_tolerates_junk():
     assert parse_frontmatter(["---\n", "name: a\n", "junk line\n", "metadata:\n", "  type: user\n", "  modified: 2026-09-29T01:27:19.281Z\n", "---\n"]) == \
         {"name": "a", "metadata.type": "user", "metadata.modified": "2026-09-29T01:27:19.281Z"}
+
+
+def test_a_byte_order_mark_does_not_hide_the_frontmatter():
+    """Windows PowerShell 5.1's `Set-Content -Encoding UTF8` and older Notepad start the file with a BOM."""
+    text = "﻿---\nname: x\ntype: feedback\nsupersedes: old-one\n---\n\n# Title\n- item\n"
+    b = split_blocks(text)
+    assert b[0].block == "frontmatter" and b[0].fields == {"name": "x", "type": "feedback", "supersedes": "old-one"}
+    assert render_blocks(b) == text  # the BOM stays in raw, so the file still renders back byte for byte
+    h = split_blocks("﻿# Title\ntext\n")
+    assert h[0].block == "heading" and h[0].text == "Title"

@@ -80,6 +80,15 @@ def parse_frontmatter(lines: list[str]) -> dict:
 
 
 def split_blocks(content: str) -> list[Block]:
+    # A UTF-8 byte order mark (PowerShell 5.1, older Notepad) would hide the frontmatter or first heading.
+    # Parse without it and put it back on the first block's raw, so rendering stays byte for byte.
+    if content.startswith("\ufeff"):
+        blocks = split_blocks(content[1:])
+        if blocks:
+            blocks[0].raw = "\ufeff" + blocks[0].raw
+        else:
+            blocks = [Block(1, "blank", "\ufeff", "", [])]
+        return blocks
     lines = content.splitlines(keepends=True)
     blocks: list[Block] = []
     section: list[str] = []
