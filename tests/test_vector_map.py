@@ -1,8 +1,9 @@
 """examples/vector-map/build.py: --hide must match however the person spells the project."""
 import importlib.util
 
-from agent_memory.config import Config
 from conftest import REPO
+
+from agent_memory.config import Config
 
 spec = importlib.util.spec_from_file_location("vector_map_build", REPO / "examples" / "vector-map" / "build.py")
 build = importlib.util.module_from_spec(spec)

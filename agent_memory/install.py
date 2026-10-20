@@ -243,7 +243,7 @@ class Installer:
     @staticmethod
     def _systemctl(*args: str) -> bool:
         try:
-            return subprocess.run(["systemctl", "--user", *args], capture_output=True, text=True).returncode == 0
+            return subprocess.run(["systemctl", "--user", *args], capture_output=True, text=True, check=False).returncode == 0
         except OSError:
             return False
 
