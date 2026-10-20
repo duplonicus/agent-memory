@@ -142,3 +142,18 @@ def test_an_unchanged_file_still_picks_up_a_new_archive_rule(db):
     conn.query("UPDATE source SET archived = true WHERE path = $p", {"p": now})
     assert imp.sync()["files"] == 1
     assert conn.query("SELECT VALUE archived FROM source WHERE path = $p", {"p": now}) == [False]
+
+
+def test_a_file_that_is_not_utf8_is_skipped_not_fatal(db):
+    """A NOW.md or note saved as UTF-16 (PowerShell 5.1's `>`) or cp1252 must not stop the files after it."""
+    cfg, conn, imp = db
+    bad = cfg.claude_dir / "rules" / "0-utf16.md"
+    bad.parent.mkdir(parents=True, exist_ok=True)
+    bad.write_bytes("# Rule\n\n- café rule\n".encode("utf-16"))
+    stats = imp.sync()
+    assert stats["skipped"] == [str(bad)]
+    paths = conn.query("SELECT VALUE path FROM source WHERE status = 'active'")
+    assert len(paths) == 13 and str(bad) not in paths
+    # once it is fixed it comes in like any new file
+    bad.write_text("# Rule\n\n- café rule\n", encoding="utf-8")
+    assert imp.sync()["files"] == 1

@@ -79,6 +79,8 @@ def _status(cfg: Config, args: list[str]) -> None:
         s = json.loads(STATUS.read_text(encoding="utf-8"))
         print(f"daemon:   last sync {s.get('last_sync')}, errors {s.get('errors')}, "
               f"last error {s.get('last_error')}, embed error {s.get('embed_error')}")
+        for path in (s.get("last_sync_stats") or {}).get("skipped") or []:
+            print(f"skipped:  {path} (not UTF-8; save it as UTF-8 and the next pass picks it up)")
     else:
         print("daemon:   no status file (not running yet?)")
 

@@ -29,6 +29,7 @@ NOW_SECTIONS = [("state", "state"), ("where", "where"), ("next", "next"), ("deci
 REVIEW_BY = re.compile(r"\(review by (\d{4}-\d{2}-\d{2})\)", re.I)
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 BATCH = 400
+_warned: set[str] = set()  # undecodable files already reported by this process (the daemon runs every 20 s)
 
 
 def sha256(data: bytes) -> str:
@@ -195,7 +196,8 @@ class Importer:
         sources = sources if sources is not None else enumerate_sources(self.cfg)
         have = self.existing()
         now = datetime.now(timezone.utc)
-        stats = {"files": 0, "unchanged": 0, "entries": 0, "logs": 0, "superseded": 0, "deleted": 0, "moved": 0}
+        stats = {"files": 0, "unchanged": 0, "entries": 0, "logs": 0, "superseded": 0, "deleted": 0, "moved": 0,
+                 "skipped": []}
         sources, gone = self._resolve(sources, have, stats)
         for src in sources:
             sid = source_id(src.key).id
@@ -206,8 +208,19 @@ class Importer:
                     and bool(h.get("archived")) == src.archived):
                 stats["unchanged"] += 1
                 continue
+            try:
+                content = data.decode("utf-8")
+            except UnicodeDecodeError as e:
+                # One file saved as UTF-16 or cp1252 must not stop every file after it. It is skipped (its
+                # rows, if it had any, stay as they were) until it is saved as UTF-8 again.
+                stats["skipped"].append(src.path)
+                if src.path not in _warned:
+                    _warned.add(src.path)
+                    self.log(f"WARN: skipped {src.path}: not UTF-8 ({e.reason} at byte {e.start}); save it as UTF-8")
+                continue
+            _warned.discard(src.path)
             stats["files"] += 1
-            self._upsert(*rows_for(src, data.decode("utf-8"), now), now, stats)
+            self._upsert(*rows_for(src, content, now), now, stats)
         limit = max(self.cfg.max_deletes, len(have) // 5)
         if len(gone) > limit and not force:
             # A folder that vanished (an unmounted drive, a renamed project dir with stale config) would
