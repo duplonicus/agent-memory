@@ -239,6 +239,7 @@ def test_the_audit_ignores_the_compaction_line(env, monkeypatch, tmp_path):
     "tail -5 /notes/LOG.md >&2",
     "cat /repo/NOW.md > /tmp/copy.md",
     "wc -l NOW.md 2>>/tmp/err.log",
+    'cat "/c/Users/Jo Doe/NOW.md" > "/tmp/a copy.md"',
 ])
 def test_a_read_with_a_redirect_is_still_a_read(command):
     assert handoff.classify("Bash", {"command": command}) is None
@@ -257,4 +258,12 @@ def test_a_commit_that_names_now_md_is_a_commit():
     "sed -i 's/a/b/' NOW.md",
 ])
 def test_writes_to_the_state_files_still_count(command):
+    assert handoff.classify("Bash", {"command": command}) == "state"
+
+
+@pytest.mark.parametrize("command", [
+    'echo "- line" >> "/c/Users/Jo Doe/agent-notes/LOG.md"',
+    "echo x > '/home/jo/my notes/NOW.md'",
+])
+def test_a_quoted_target_with_a_space_in_its_path_counts(command):
     assert handoff.classify("Bash", {"command": command}) == "state"
