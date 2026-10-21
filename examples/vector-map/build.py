@@ -16,17 +16,22 @@ from pathlib import Path
 
 from agent_memory.config import load
 from agent_memory.db import connect
-from agent_memory.projects import canonical
+from agent_memory.projects import canonical, norm
 
 HERE = Path(__file__).resolve().parent
 
 
+def hide_key(raw: str, cfg) -> str:
+    """The name --hide matches a dot's project on: its canonical name, or for a project in [projects] drop
+    (which has none) the normalized name, so every spelling of a dropped project still matches."""
+    return (canonical(raw, cfg) or [norm(raw)])[0]
+
+
 def hidden(argv: list[str], cfg) -> set[str]:
-    """The --hide projects as canonical names, the form every dot's project takes, so the folder name
-    (My_Client), the LOG spelling (my-client) and an alias all hide the same project. A project in
-    [projects] drop has no canonical name, so it keeps the name as written, the same fallback its dots use."""
+    """The --hide projects as hide keys, so the folder name (My_Client), the LOG spelling (my-client) and an
+    alias all hide the same project, dropped or not."""
     return {name for i, a in enumerate(argv) if i and argv[i - 1] == "--hide"
-            for name in canonical(a, cfg) or [a]}
+            for name in canonical(a, cfg) or [norm(a)]}
 
 
 def hide_report(hide: set[str], found: set[str]) -> list[str]:
@@ -75,15 +80,16 @@ def main(argv: list[str]) -> None:
         s = Xn[i:i + 1000] @ Xn.T
         for row, ids in enumerate(np.argsort(-s, axis=1)[:, 1:6]):
             nn.append([[int(j), round(float(1 - s[row, j]), 3)] for j in ids])
-    pts = []
+    pts, found = [], set()
     for i, k in enumerate(keys):
         m = meta[k]
         project = (canonical(m["project"], cfg) or [m["project"]])[0]
+        found.add(key := hide_key(m["project"], cfg))
         text = " ".join((m.get("text") or "").split())
         pts.append({"p": project, "k": m["kind"], "x": round(float(Y[i, 0]), 3), "y": round(float(Y[i, 1]), 3),
-                    "z": round(float(Y[i, 2]), 3), "t": "(text hidden)" if project in hide else text[:280], "n": nn[i]})
+                    "z": round(float(Y[i, 2]), 3), "t": "(text hidden)" if key in hide else text[:280], "n": nn[i]})
     if "--hide" in argv[1:]:
-        print("\n".join(hide_report(hide, {p["p"] for p in pts})))
+        print("\n".join(hide_report(hide, found)))
     data = json.dumps(pts, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     html = (HERE / "template.html").read_text(encoding="utf-8")
     out.write_text(html.replace("__DATA__", data).replace("__BUILT__", date.today().isoformat()), encoding="utf-8")
