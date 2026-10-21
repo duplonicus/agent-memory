@@ -21,9 +21,11 @@ MIN_WORK = 3  # edits + commits before a session with no LOG line is sent back
 
 STATE_FILE = re.compile(r"(?:^|[/\\\s\"'])(NOW|LOG)\.md\b")
 # A redirect only writes the state file when the file is its target: `cat NOW.md 2>/dev/null` and
-# `head NOW.md 2>&1` are reads. 2> (stderr) and >& (a descriptor) never are. A quoted target may have spaces.
+# `head NOW.md 2>&1` are reads. 2> (stderr) and >& (a descriptor) never are. A quoted target may have spaces,
+# but its quote must close right after the file name: in `grep -n "->" ~/notes/LOG.md` the quote is grep's.
 REDIRECT_TO_STATE = re.compile(
-    r"""(?<!\d)>>?(?!&)\s*(?:"[^"\n]*[/\\]|'[^'\n]*[/\\]|["']?(?:[^\s;|&<>"']*[/\\])?)(?:NOW|LOG)\.md\b""")
+    r"""(?<!\d)>>?(?!&)\s*(?:"[^"\n]*[/\\](?:NOW|LOG)\.md"|'[^'\n]*[/\\](?:NOW|LOG)\.md'"""
+    r"""|["']?(?:[^\s;|&<>"']*[/\\])?(?:NOW|LOG)\.md\b)""")
 SHELL_WRITE = re.compile(r"\btee\b|sed\s+-i|\.write\(|write_text\(|Add-Content|Out-File|Set-Content")
 COMMIT = re.compile(r"\bgit\b[^\n|;&]*\bcommit\b")
 DECISION = re.compile(

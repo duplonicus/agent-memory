@@ -240,6 +240,8 @@ def test_the_audit_ignores_the_compaction_line(env, monkeypatch, tmp_path):
     "cat /repo/NOW.md > /tmp/copy.md",
     "wc -l NOW.md 2>>/tmp/err.log",
     'cat "/c/Users/Jo Doe/NOW.md" > "/tmp/a copy.md"',
+    'grep -n "->" ~/notes/LOG.md',
+    "grep -c '^>' /repo/NOW.md",
 ])
 def test_a_read_with_a_redirect_is_still_a_read(command):
     assert handoff.classify("Bash", {"command": command}) is None
@@ -247,6 +249,7 @@ def test_a_read_with_a_redirect_is_still_a_read(command):
 
 def test_a_commit_that_names_now_md_is_a_commit():
     assert handoff.classify("Bash", {"command": 'git commit -m "update NOW.md" 2>&1'}) == "commit"
+    assert handoff.classify("Bash", {"command": 'git commit -m x && grep -n "->" ~/notes/LOG.md'}) == "commit"
 
 
 @pytest.mark.parametrize("command", [
