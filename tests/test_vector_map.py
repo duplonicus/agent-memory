@@ -1,6 +1,7 @@
 """examples/vector-map/build.py: --hide must match however the person spells the project."""
 import importlib.util
 
+import pytest
 from conftest import REPO
 
 from agent_memory.config import Config
@@ -42,3 +43,20 @@ def test_hide_report_always_says_what_was_hidden():
     lines = build.hide_report({"nope"}, {"web"})
     assert lines[0] == "text hidden for: none"
     assert lines[1].startswith("WARN: no notes in nope")
+
+
+def test_hide_takes_an_equals_sign_too():
+    cfg = Config()
+    assert build.hidden(["map.html", "--hide=My_Client", "--hide", "web"], cfg) == {"my-client", "web"}
+
+
+def test_any_other_argument_exits_with_the_usage_before_building():
+    """A mistyped --hide used to be ignored: the map was built with that project's text and the hide report
+    never printed."""
+    bad = [["map.html", "--hdie", "my-client"], ["map.html", "--hide", "web", "--hdie", "my-client"],
+           ["map.html", "my-client"], ["map.html", "--hide"], ["map.html", "--hide="],
+           ["map.html", "--hide", "--hdie"]]
+    for argv in bad:
+        with pytest.raises(SystemExit) as exc:
+            build.main(argv)
+        assert exc.value.code == build.__doc__, argv

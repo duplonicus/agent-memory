@@ -3,6 +3,9 @@ self-contained HTML page (rotate, zoom, search words, click a dot for its 5 near
 
     uv run --extra map python examples/vector-map/build.py memory-map.html [--hide PROJECT ...]
 
+--hide NAME and --hide=NAME both work; any other argument stops the build with this text, so a typo never
+builds a page that shows what it was meant to hide.
+
 Reads the vectors the sync daemon already made, so nothing is embedded again. --hide keeps a project's dots
 but replaces their text with "(text hidden)": the page carries up to 280 characters of every note, so hide
 anything private before you share it.
@@ -27,11 +30,28 @@ def hide_key(raw: str, cfg) -> str:
     return (canonical(raw, cfg) or [norm(raw)])[0]
 
 
+def hide_names(argv: list[str]) -> list[str]:
+    """The names given to --hide (as --hide NAME or --hide=NAME). Anything else after the output path, a
+    mistyped flag or a name without --hide, exits with the usage: ignoring it would build the page with that
+    project's text in it and print nothing about hiding."""
+    names, args = [], iter(argv[1:])
+    for a in args:
+        if a == "--hide":
+            a = next(args, "")
+            if not a or a.startswith("-"):
+                sys.exit(__doc__)
+            names.append(a)
+        elif a.startswith("--hide=") and a[len("--hide="):]:
+            names.append(a[len("--hide="):])
+        else:
+            sys.exit(__doc__)
+    return names
+
+
 def hidden(argv: list[str], cfg) -> set[str]:
     """The --hide projects as hide keys, so the folder name (My_Client), the LOG spelling (my-client) and an
     alias all hide the same project, dropped or not."""
-    return {name for i, a in enumerate(argv) if i and argv[i - 1] == "--hide"
-            for name in canonical(a, cfg) or [norm(a)]}
+    return {name for a in hide_names(argv) for name in canonical(a, cfg) or [norm(a)]}
 
 
 def hide_report(hide: set[str], found: set[str]) -> list[str]:
@@ -46,6 +66,7 @@ def hide_report(hide: set[str], found: set[str]) -> list[str]:
 def main(argv: list[str]) -> None:
     if not argv or argv[0].startswith("-"):
         sys.exit(__doc__)
+    hide_names(argv)  # a bad argument stops here, before the slow imports and the database
     import numpy as np
     import umap
 
@@ -88,7 +109,7 @@ def main(argv: list[str]) -> None:
         text = " ".join((m.get("text") or "").split())
         pts.append({"p": project, "k": m["kind"], "x": round(float(Y[i, 0]), 3), "y": round(float(Y[i, 1]), 3),
                     "z": round(float(Y[i, 2]), 3), "t": "(text hidden)" if key in hide else text[:280], "n": nn[i]})
-    if "--hide" in argv[1:]:
+    if len(argv) > 1:
         print("\n".join(hide_report(hide, found)))
     data = json.dumps(pts, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     html = (HERE / "template.html").read_text(encoding="utf-8")
