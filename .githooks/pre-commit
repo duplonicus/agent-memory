@@ -23,7 +23,8 @@ patterns=(
 status=0
 diff_added=$(git diff --cached | grep -E "^\+" || true)
 for p in "${patterns[@]}"; do
-  if printf '%s\n' "$diff_added" | grep -Eq -- "$p"; then
+  # pipefail off here: grep -q exits at its first match, and the writer's SIGPIPE must not read as no match.
+  if (set +o pipefail; printf '%s\n' "$diff_added" | grep -Eq -- "$p"); then
     echo "pre-commit: suspected secret pattern detected ($p)." >&2
     status=1
   fi
